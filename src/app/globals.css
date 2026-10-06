@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-canvas font-sans text-ink antialiased;
+  }
+  button,
+  a {
+    touch-action: manipulation;
+  }
+  :focus-visible {
+    outline: 2px solid #13896f;
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .metric {
+    @apply font-display font-bold leading-none tracking-tight;
+    font-variant-numeric: tabular-nums;
+  }
+  .pt-safe {
+    padding-top: max(env(safe-area-inset-top), 0px);
+  }
+  .pb-safe {
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  }
+}
+
+/* Slider de preferencia de ruta */
+input[type="range"].waylo-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 44px;
+  background: transparent;
+  width: 100%;
+}
+input[type="range"].waylo-range::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, #0f6b5c var(--fill, 50%), #e2e5e8 var(--fill, 50%));
+}
+input[type="range"].waylo-range::-moz-range-track {
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, #0f6b5c var(--fill, 50%), #e2e5e8 var(--fill, 50%));
+}
+input[type="range"].waylo-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 28px;
+  width: 28px;
+  margin-top: -10px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #0f6b5c;
+}
+input[type="range"].waylo-range::-moz-range-thumb {
+  height: 22px;
+  width: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #0f6b5c;
+}
+
+.maplibregl-ctrl-attrib {
+  font-size: 10px;
+}
