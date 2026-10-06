@@ -42,8 +42,11 @@ export function HeatmapLayer({ data, visible }: Props) {
       (map.getSource("risk") as GeoJSONSource).setData(data);
     }
     return () => {
-      if (map.getLayer("risk-heat")) map.removeLayer("risk-heat");
-      if (map.getSource("risk")) map.removeSource("risk");
+      // El mapa puede haberse destruido ya al desmontar la pantalla.
+      try {
+        if (map.getLayer("risk-heat")) map.removeLayer("risk-heat");
+        if (map.getSource("risk")) map.removeSource("risk");
+      } catch {}
     };
   }, [ctx, data]);
 

@@ -45,8 +45,11 @@ export function RouteLine({ id, coordinates, color = ROUTE_COLOR, width = 6, opa
     if (!ctx) return;
     const { map } = ctx;
     return () => {
-      [`${id}-line`, `${id}-casing`].forEach((l) => map.getLayer(l) && map.removeLayer(l));
-      if (map.getSource(id)) map.removeSource(id);
+      // El mapa puede haberse destruido ya al desmontar la pantalla.
+      try {
+        [`${id}-line`, `${id}-casing`].forEach((l) => map.getLayer(l) && map.removeLayer(l));
+        if (map.getSource(id)) map.removeSource(id);
+      } catch {}
     };
   }, [ctx, id]);
 
