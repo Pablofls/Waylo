@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { CornerUpLeft, CornerUpRight, ArrowUp, Flag, Mic, Pause, Play, Square, MapPinned, X, Siren, Check } from "lucide-react";
+import { Bike, Scooter, Compass, CornerUpLeft, CornerUpRight, ArrowUp, Flag, Mic, Pause, Play, Square, MapPinned, X, Siren, Check } from "lucide-react";
 import { MapView } from "@/components/map/MapView";
 import { RouteLine } from "@/components/map/RouteLine";
 import { UserMarker } from "@/components/map/UserMarker";
@@ -12,6 +12,7 @@ import { AlertBanner } from "@/components/domain/AlertBanner";
 import { ReportSheet } from "@/components/domain/ReportSheet";
 import { Button } from "@/components/ui/Button";
 import { Toggle } from "@/components/ui/Toggle";
+import { riskAt } from "@/lib/map/risk";
 import { useRide } from "@/lib/geo/useRide";
 import { useWakeLock } from "@/lib/geo/useWakeLock";
 import { formatDuration } from "@/lib/format";
@@ -26,9 +27,11 @@ interface Props {
   steps: NavStep[];
   alerts: NavAlert[];
   risk: FeatureCollection<Point>;
+  /** Con ruta (navegación guiada) o rodada libre sin destino. */
+  guided: boolean;
 }
 
-export function LiveRide({ route, steps, alerts, risk }: Props) {
+export function LiveRide({ route, steps, alerts, risk, guided }: Props) {
   const router = useRouter();
   const [phase, setPhase] = useState<"idle" | "active">("idle");
   const [paused, setPaused] = useState(false);
@@ -37,6 +40,7 @@ export function LiveRide({ route, steps, alerts, risk }: Props) {
   const [reportCount, setReportCount] = useState(0);
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [dismissed, setDismissed] = useState<string | null>(null);
+  const [vehicle, setVehicle] = useState<"bicicleta" | "scooter">("bicicleta");
 
   const active = phase === "active";
   const ride = useRide({ active, paused, simulate, simulationRoute: route.coordinates });
@@ -44,19 +48,26 @@ export function LiveRide({ route, steps, alerts, risk }: Props) {
 
   const progress = Math.min(1, ride.km / route.km);
   const nextStep = useMemo(() => steps.find((s) => s.at > progress + 0.001) ?? steps[steps.length - 1], [steps, progress]);
-  const alert = alerts.find((a) => progress >= a.from && progress <= a.to);
+  const nearRisk = !guided && ride.position ? riskAt(ride.position, risk) : 0;
+  const alert = guided
+    ? alerts.find((a) => progress >= a.from && progress <= a.to)
+    : nearRisk > 0.55
+      ? { title: "Zona de riesgo alto", text: "Hay varios reportes cerca. Baja la velocidad y circula con precaución.", tone: "red" as const }
+      : undefined;
   const distToNext = Math.max(0, Math.round(((nextStep.at - progress) * route.km * 1000) / 10) * 10);
   const Turn = turnIcon[nextStep.turn];
 
   const finish = () => {
-    const q = new URLSearchParams({ ruta: route.id, km: ride.km.toFixed(1), seg: String(ride.seconds), pend: String(reportCount) });
+    const avgRisk = ride.track.length ? ride.track.reduce((a, p) => a + riskAt(p, risk), 0) / ride.track.length : 0.3;
+    const score = Math.round(Math.max(40, Math.min(97, 100 - avgRisk * 70)));
+    const q = new URLSearchParams({ ruta: guided ? route.id : "libre", score: String(score), km: ride.km.toFixed(1), seg: String(ride.seconds), pend: String(reportCount) });
     router.push(`/rodada/resumen?${q.toString()}`);
   };
 
   return (
     <div className="relative flex-1 bg-brand-900">
       <MapView center={route.coordinates[0]} zoom={15}>
-        <RouteLine id="plan" coordinates={route.coordinates} risk={risk} width={6} opacity={active ? 0.4 : 1} fit fitPadding={{ top: 80, bottom: 280, left: 40, right: 40 }} />
+        {guided && <RouteLine id="plan" coordinates={route.coordinates} risk={risk} width={6} opacity={active ? 0.4 : 1} fit fitPadding={{ top: 80, bottom: 280, left: 40, right: 40 }} />}
         {ride.track.length > 1 && <RouteLine id="track" coordinates={ride.track} risk={risk} width={8} />}
         <UserMarker position={ride.position ?? (active ? null : route.coordinates[0])} follow={active} />
       </MapView>
@@ -65,13 +76,23 @@ export function LiveRide({ route, steps, alerts, risk }: Props) {
       <div className="pt-safe pointer-events-none absolute inset-x-0 top-0 space-y-2 p-3">
         {active ? (
           <>
-            <div className="pointer-events-auto flex items-center gap-4 rounded-xl bg-brand-900 px-4 py-3 text-white">
-              <Turn size={36} strokeWidth={2.5} />
-              <div className="min-w-0 flex-1">
-                <p className="metric text-3xl">{nextStep.turn === "llegada" ? "Destino" : `${distToNext} m`}</p>
-                <p className="truncate text-sm text-white/80">{nextStep.text}</p>
+            {guided ? (
+              <div className="pointer-events-auto flex items-center gap-4 rounded-xl bg-brand-900 px-4 py-3 text-white">
+                <Turn size={36} strokeWidth={2.5} />
+                <div className="min-w-0 flex-1">
+                  <p className="metric text-3xl">{nextStep.turn === "llegada" ? "Destino" : `${distToNext} m`}</p>
+                  <p className="truncate text-sm text-white/80">{nextStep.text}</p>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="pointer-events-auto flex items-center gap-3 rounded-xl bg-brand-900 px-4 py-3 text-white">
+                <Compass size={28} />
+                <div>
+                  <p className="font-bold leading-tight">Rodada libre</p>
+                  <p className="text-sm text-white/70">Sin destino. Te avisamos de zonas de riesgo cercanas.</p>
+                </div>
+              </div>
+            )}
             {alert && dismissed !== alert.title && (
               <button className="pointer-events-auto block w-full text-left" onClick={() => setDismissed(alert.title)} aria-label="Cerrar aviso">
                 <AlertBanner tone={alert.tone} title={alert.title} text={alert.text} />
@@ -81,7 +102,7 @@ export function LiveRide({ route, steps, alerts, risk }: Props) {
           </>
         ) : (
           <div className="pointer-events-auto flex items-center justify-between">
-            <Link href="/rutas" aria-label="Cerrar" className="flex h-12 w-12 items-center justify-center rounded-full bg-white"><X size={22} /></Link>
+            <Link href={guided ? "/mapa" : "/inicio"} aria-label="Cerrar" className="flex h-12 w-12 items-center justify-center rounded-full bg-white"><X size={22} /></Link>
           </div>
         )}
       </div>
@@ -103,9 +124,27 @@ export function LiveRide({ route, steps, alerts, risk }: Props) {
       <div className="pb-safe absolute inset-x-0 bottom-0 rounded-t-3xl bg-brand-900 px-4 pt-4 text-white">
         {!active ? (
           <div className="pb-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-white/60">Listo para salir</p>
-            <p className="mt-1 text-xl font-bold">{route.label} · {route.minutes} min · {route.km.toFixed(1)} km</p>
-            <p className="text-sm text-white/70">vía {route.via}</p>
+            {guided ? (
+              <>
+                <p className="text-xs font-semibold uppercase tracking-wide text-white/60">Listo para salir</p>
+                <p className="mt-1 text-xl font-bold">{route.label} · {route.minutes} min · {route.km.toFixed(1)} km</p>
+                <p className="text-sm text-white/70">vía {route.via}</p>
+              </>
+            ) : (
+              <>
+                <p className="text-xs font-semibold uppercase tracking-wide text-white/60">Rodada libre</p>
+                <p className="mt-1 text-xl font-bold">Sal sin ruta y registra tu recorrido</p>
+                <p className="text-sm text-white/70">Si ya sabes a dónde vas, planea una ruta segura desde Mapa.</p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {(["bicicleta", "scooter"] as const).map((v) => (
+                    <button key={v} onClick={() => setVehicle(v)} aria-pressed={vehicle === v} className={`flex min-h-[48px] items-center justify-center gap-2 rounded-xl border text-sm font-semibold ${vehicle === v ? "border-white bg-white text-brand-900" : "border-white/30 text-white"}`}>
+                      {v === "bicicleta" ? <Bike size={18} /> : <Scooter size={18} />}
+                      {v === "bicicleta" ? "Bicicleta" : "Scooter"}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
             <div className="mt-3 flex items-center justify-between rounded-xl bg-white/10 pl-4">
               <div className="flex items-center gap-3">
                 <MapPinned size={20} />
@@ -150,7 +189,7 @@ export function LiveRide({ route, steps, alerts, risk }: Props) {
         </div>
       )}
 
-      <ReportSheet open={sheet} onClose={() => setSheet(false)} onSaved={() => setReportCount((n) => n + 1)} locationLabel="Av. Sendero, San Nicolás" />
+      <ReportSheet open={sheet} onClose={() => setSheet(false)} onSaved={() => setReportCount((n) => n + 1)} locationLabel="Av. Morones Prieto, San Pedro" />
     </div>
   );
 }

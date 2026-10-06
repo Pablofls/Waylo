@@ -2,10 +2,11 @@
 import { mockUser } from "@/mocks/user";
 import { mockRoutes } from "@/mocks/routes";
 import { mockReports, communityReports } from "@/mocks/reports";
-import { mockRides, monthStats } from "@/mocks/rides";
+import { mockRides, monthStats, communityRides } from "@/mocks/rides";
 import { mockGroupRides } from "@/mocks/group-rides";
 import { mockBadges, confirmedReports } from "@/mocks/badges";
 import { riskPoints } from "@/mocks/risk-points";
+import { friends, friendRequests, friendSuggestions, friendActivity } from "@/mocks/friends";
 import { navSteps, navAlerts } from "@/mocks/navigation";
 import { PLACES, HOME, UNIVERSITY, MONTERREY_CENTER } from "@/mocks/places";
 
@@ -27,3 +28,8 @@ export const getRiskPoints = () => wait(riskPoints);
 export const getPlaces = () => wait(PLACES);
 export const getMapCenter = () => MONTERREY_CENTER;
 export const getNavigation = (_routeId: string) => wait({ steps: navSteps, alerts: navAlerts });
+export const getFriends = () => wait(friends);
+export const getFriendRequests = () => wait(friendRequests);
+export const getFriendSuggestions = () => wait(friendSuggestions);
+export const getFriendActivity = () => wait(friendActivity);
+export const getCommunityRides = () => wait(communityRides);

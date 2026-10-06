@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Map, Route, Circle, Users, User } from "lucide-react";
+import { Home, Map, Play, Users, User } from "lucide-react";
 
 const tabs = [
+  { href: "/inicio", label: "Inicio", icon: Home },
   { href: "/mapa", label: "Mapa", icon: Map },
-  { href: "/rutas", label: "Rutas", icon: Route },
-  { href: "/rodada", label: "Grabar", icon: Circle, center: true },
+  { href: "/rodada", label: "Comenzar", icon: Play, center: true },
   { href: "/comunidad", label: "Comunidad", icon: Users },
   { href: "/perfil", label: "Perfil", icon: User },
 ];
@@ -19,17 +19,17 @@ export function BottomNav({ activeOverride }: { activeOverride?: string }) {
     <nav aria-label="Principal" className="pb-safe shrink-0 border-t border-line bg-white">
       <ul className="grid grid-cols-5 items-end px-1">
         {tabs.map(({ href, label, icon: Icon, center }) => {
-          const active = current === href || current.startsWith(href + "/");
+          const active = current === href || current.startsWith(href + "/") || (href === "/mapa" && current.startsWith("/rutas"));
           if (center) {
             return (
               <li key={href} className="flex justify-center">
                 <Link
                   href={href}
                   className="-mt-5 flex h-16 w-16 flex-col items-center justify-center rounded-full bg-brand-600 text-white ring-4 ring-white active:bg-brand-700"
-                  aria-label="Grabar rodada"
+                  aria-label="Comenzar rodada"
                 >
                   <Icon size={22} strokeWidth={3} fill="currentColor" />
-                  <span className="mt-0.5 text-[10px] font-semibold">Grabar</span>
+                  <span className="mt-0.5 text-[10px] font-semibold">Comenzar</span>
                 </Link>
               </li>
             );

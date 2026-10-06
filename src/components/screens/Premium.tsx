@@ -1,6 +1,3 @@
-"use client";
-
-import { useState } from "react";
 import { Check, Minus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
@@ -21,7 +18,6 @@ function Mark({ on }: { on: boolean }) {
 }
 
 export function Premium() {
-  const [plan, setPlan] = useState<"normal" | "estudiante">("estudiante");
   return (
     <div className="flex-1 overflow-y-auto bg-white">
       <header className="pt-safe bg-brand-900 px-4 pb-6 text-white">
@@ -46,28 +42,17 @@ export function Premium() {
         </ul>
       </section>
 
-      <section className="space-y-3 px-4 py-6" role="radiogroup" aria-label="Plan">
-        {[
-          { id: "normal" as const, name: "Mensual", price: 79, note: "Cancela cuando quieras" },
-          { id: "estudiante" as const, name: "Tarifa estudiantil", price: 49, note: "Con credencial vigente" },
-        ].map((p) => (
-          <button
-            key={p.id}
-            role="radio"
-            aria-checked={plan === p.id}
-            onClick={() => setPlan(p.id)}
-            className={`flex min-h-[76px] w-full items-center justify-between rounded-card border-2 px-4 text-left ${plan === p.id ? "border-brand-600 bg-brand-100" : "border-line"}`}
-          >
-            <span>
-              <span className="block font-bold">{p.name}</span>
-              <span className="block text-sm text-muted">{p.note}</span>
-            </span>
-            <span className="text-right">
-              <span className="metric text-4xl">${p.price}</span>
-              <span className="block text-xs text-muted">MXN al mes</span>
-            </span>
-          </button>
-        ))}
+      <section className="space-y-3 px-4 py-6">
+        <div className="flex min-h-[76px] items-center justify-between rounded-card border-2 border-brand-600 bg-brand-100 px-4">
+          <span>
+            <span className="block font-bold">Mensual</span>
+            <span className="block text-sm text-muted">Cancela cuando quieras</span>
+          </span>
+          <span className="text-right">
+            <span className="metric text-4xl">$79</span>
+            <span className="block text-xs text-muted">MXN al mes</span>
+          </span>
+        </div>
         <Button full size="lg">Continuar con Premium</Button>
         <p className="text-center text-xs text-muted">Pago simulado en esta versión. No se realiza ningún cargo.</p>
       </section>

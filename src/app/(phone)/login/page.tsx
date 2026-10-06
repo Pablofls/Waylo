@@ -30,7 +30,7 @@ function AppleMark() {
 export default function LoginPage() {
   const router = useRouter();
   const [show, setShow] = useState(false);
-  const go = () => router.push("/mapa");
+  const go = () => router.push("/inicio");
 
   return (
     <div className="pt-safe pb-safe flex-1 overflow-y-auto px-6">

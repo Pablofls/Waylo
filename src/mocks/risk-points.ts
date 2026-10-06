@@ -7,7 +7,8 @@ const clusters: { c: [number, number]; n: number; spread: number; w: number }[] 
   { c: [-100.2855, 25.679], n: 22, spread: 0.007, w: 0.55 }, // Fundidora
   { c: [-100.3185, 25.6415], n: 18, spread: 0.007, w: 0.45 }, // Valle Oriente
   { c: [-100.3555, 25.6575], n: 16, spread: 0.007, w: 0.5 }, // San Pedro
-  { c: [-100.2985, 25.7355], n: 34, spread: 0.009, w: 0.75 }, // Av. Universidad, San Nicolás
+  { c: [-100.4075, 25.6575], n: 34, spread: 0.005, w: 0.8 }, // Av. Morones Prieto, cerca de la UDEM
+  { c: [-100.4145, 25.6595], n: 14, spread: 0.003, w: 0.6 }, // Entrada de la UDEM
   { c: [-100.2565, 25.677], n: 20, spread: 0.008, w: 0.6 }, // Guadalupe
 ];
 

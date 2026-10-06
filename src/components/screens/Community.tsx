@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar, MapPin, Users, Route as RouteIcon } from "lucide-react";
+import Link from "next/link";
+import { Users as UsersIcon, Calendar, MapPin, Users, Route as RouteIcon } from "lucide-react";
 import { ReportListItem } from "@/components/domain/ReportListItem";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -21,7 +22,10 @@ export function Community({ reports, rides }: { reports: Report[]; rides: GroupR
   return (
     <>
       <header className="pt-safe shrink-0 bg-white px-4">
-        <h1 className="pt-4 text-2xl font-bold">Comunidad</h1>
+        <div className="flex items-center justify-between pt-4">
+          <h1 className="text-2xl font-bold">Comunidad</h1>
+          <Link href="/amigos" aria-label="Amigos" className="flex h-11 items-center gap-2 rounded-full border border-line px-4 text-sm font-semibold"><UsersIcon size={18} />Amigos</Link>
+        </div>
         <div role="tablist" className="mt-2 flex">
           {tabs.map((t) => (
             <button

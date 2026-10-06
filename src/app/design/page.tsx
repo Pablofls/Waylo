@@ -134,14 +134,14 @@ export default function DesignPage() {
             <div className="mt-2 flex gap-8"><StatBlock value="112.4" unit="km" label="Recorridos" /><StatBlock value="18" label="Rodadas" /></div>
           </Card>
           <div className="space-y-2">
-            <AlertBanner tone="orange" title="Bache a 150 m" text="Carril derecho, Av. Universidad." />
+            <AlertBanner tone="orange" title="Bache a 150 m" text="Carril derecho, Av. Morones Prieto." />
             <AlertBanner tone="red" title="Accidente adelante" text="Av. Constitución y Zaragoza." />
           </div>
         </div>
       </Section>
 
-      <Section title="Barra inferior" note="Cinco pestañas. Grabar es el botón central destacado.">
-        <div className="max-w-[390px] overflow-hidden rounded-card border border-line"><BottomNav activeOverride="/mapa" /></div>
+      <Section title="Barra inferior" note="Cinco pestañas. Comenzar es el botón central destacado.">
+        <div className="max-w-[390px] overflow-hidden rounded-card border border-line"><BottomNav activeOverride="/inicio" /></div>
       </Section>
 
       <Section title="Estados">

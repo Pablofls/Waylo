@@ -109,3 +109,32 @@ export interface BadgeInfo {
 export interface RiskPointProps {
   weight: number;
 }
+
+export interface Friend {
+  id: string;
+  name: string;
+  city: string;
+  mutual: number;
+}
+
+export interface FriendActivity {
+  id: string;
+  friendId: string;
+  title: string;
+  km: number;
+  minutes: number;
+  safetyScore: number;
+  at: string;
+  vehicle: "bicicleta" | "scooter";
+}
+
+export interface CommunityRide {
+  id: string;
+  person: string;
+  title: string;
+  km: number;
+  minutes: number;
+  safetyScore: number;
+  at: string;
+  zone: string;
+}

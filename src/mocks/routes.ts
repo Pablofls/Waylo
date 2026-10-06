@@ -1,25 +1,24 @@
 import type { RouteOption } from "@/types";
 
-// Trazos aproximados San Nicolás -> UANL CU. En fase 3 vendrán de OpenRouteService.
+// Ruta demo: casa (cerca de la UDEM) -> UDEM. Trazos aproximados; en fase 3 vendrán de OpenRouteService.
 export const mockRoutes: RouteOption[] = [
   {
     id: "rapida",
     label: "Más rápida",
-    minutes: 24,
-    km: 6.1,
+    minutes: 11,
+    km: 2.4,
     safetyScore: 58,
     extraMinutes: 0,
-    via: "Av. Universidad",
+    via: "Av. Morones Prieto",
     summary:
-      "Recorre casi todo el trayecto por Av. Universidad, con tráfico pesado y a más de 60 km/h en horas pico.",
+      "Recorre casi todo el trayecto por Av. Morones Prieto, con tráfico pesado y autos a más de 60 km/h en horas pico.",
     coordinates: [
-      [-100.286, 25.7475], [-100.2905, 25.744], [-100.2955, 25.7395], [-100.3, 25.735],
-      [-100.305, 25.731], [-100.3085, 25.7275], [-100.311, 25.7245],
+      [-100.399, 25.654], [-100.403, 25.656], [-100.4075, 25.6575], [-100.412, 25.659], [-100.415, 25.6598], [-100.417, 25.6605],
     ],
     factors: [
-      { key: "trafico", label: "Tráfico y velocidad vehicular", score: 38, explanation: "Avenida de 4 carriles con límite de 60 km/h y 11 reportes de autos a alta velocidad este mes." },
-      { key: "robo", label: "Robo o asalto", score: 62, explanation: "Dos reportes de asalto en los últimos 30 días cerca del cruce con Av. Sendero." },
-      { key: "iluminacion", label: "Iluminación", score: 70, explanation: "Alumbrado público continuo, con un tramo oscuro de 400 m bajo el puente." },
+      { key: "trafico", label: "Tráfico y velocidad vehicular", score: 38, explanation: "Avenida de varios carriles con límite de 60 km/h y 11 reportes de autos a alta velocidad este mes." },
+      { key: "robo", label: "Robo o asalto", score: 62, explanation: "Dos reportes de asalto en los últimos 30 días cerca de la entrada a la universidad." },
+      { key: "iluminacion", label: "Iluminación", score: 70, explanation: "Alumbrado público continuo, con un tramo oscuro de 300 m antes de llegar." },
       { key: "pavimento", label: "Estado del pavimento", score: 55, explanation: "Seis baches reportados, tres de ellos en el carril derecho." },
       { key: "ciclovia", label: "Presencia de ciclovía", score: 20, explanation: "Sin ciclovía; se comparte carril con autos y camiones." },
     ],
@@ -27,16 +26,15 @@ export const mockRoutes: RouteOption[] = [
   {
     id: "equilibrada",
     label: "Equilibrada",
-    minutes: 27,
-    km: 6.6,
+    minutes: 13,
+    km: 2.7,
     safetyScore: 76,
-    extraMinutes: 3,
-    via: "Av. Fidel Velázquez y calles locales",
+    extraMinutes: 2,
+    via: "Calles locales del fraccionamiento",
     summary:
-      "Evita el tramo más peligroso de Av. Universidad usando calles locales con menor velocidad y mejor iluminación.",
+      "Evita el tramo más peligroso de Av. Morones Prieto usando calles locales con menor velocidad y mejor iluminación.",
     coordinates: [
-      [-100.286, 25.7475], [-100.2885, 25.7425], [-100.2935, 25.7395], [-100.2985, 25.7345],
-      [-100.3045, 25.7305], [-100.3095, 25.7265], [-100.311, 25.7245],
+      [-100.399, 25.654], [-100.4025, 25.6575], [-100.4075, 25.6595], [-100.4125, 25.6612], [-100.4155, 25.6612], [-100.417, 25.6605],
     ],
     factors: [
       { key: "trafico", label: "Tráfico y velocidad vehicular", score: 72, explanation: "Calles locales con límite de 40 km/h y poco tráfico pesado." },
@@ -49,16 +47,15 @@ export const mockRoutes: RouteOption[] = [
   {
     id: "segura",
     label: "Más segura",
-    minutes: 33,
-    km: 7.4,
+    minutes: 15,
+    km: 3.2,
     safetyScore: 88,
-    extraMinutes: 9,
-    via: "Ciclovía de Av. Sendero y Paseo de los Leones",
+    extraMinutes: 4,
+    via: "Calles tranquilas y ciclovía",
     summary:
-      "Prioriza ciclovías y calles con poca velocidad vehicular. Tarda 9 minutos más, dentro de tu tope de 10.",
+      "Prioriza ciclovías y calles con poca velocidad vehicular. Tarda 4 minutos más, dentro de tu tope de 10.",
     coordinates: [
-      [-100.286, 25.7475], [-100.283, 25.743], [-100.2855, 25.737], [-100.2925, 25.7325],
-      [-100.2995, 25.728], [-100.3055, 25.7235], [-100.3085, 25.7225], [-100.311, 25.7245],
+      [-100.399, 25.654], [-100.4, 25.6505], [-100.4045, 25.6495], [-100.41, 25.652], [-100.414, 25.656], [-100.416, 25.659], [-100.417, 25.6605],
     ],
     factors: [
       { key: "trafico", label: "Tráfico y velocidad vehicular", score: 90, explanation: "Casi todo el trayecto va separado del tráfico o por calles de 30 km/h." },

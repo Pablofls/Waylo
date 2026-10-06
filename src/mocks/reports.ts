@@ -2,20 +2,20 @@ import type { Report } from "@/types";
 
 export const mockReports: Report[] = [
   {
-    id: "r_1042", category: "bache", coordinates: [-100.2985, 25.7352], street: "Av. Universidad y Sendero", colonia: "San Nicolás Centro",
+    id: "r_1042", category: "bache", coordinates: [-100.4075, 25.6575], street: "Av. Morones Prieto", colonia: "San Pedro Garza García",
     createdAt: "2026-10-05T07:42:00-06:00", status: "en_revision", confirmations: 6, note: "Bache profundo en el carril derecho.",
     timeline: [
       { status: "enviado", at: "2026-10-05T07:42:00-06:00", text: "Reporte enviado desde tu rodada." },
-      { status: "en_revision", at: "2026-10-05T11:15:00-06:00", text: "Obras Públicas de San Nicolás lo recibió y lo está revisando." },
+      { status: "en_revision", at: "2026-10-05T11:15:00-06:00", text: "Obras Públicas de San Pedro lo recibió y lo está revisando." },
     ],
   },
   {
-    id: "r_1038", category: "poca_iluminacion", coordinates: [-100.3022, 25.7318], street: "Bajo el puente de Av. Universidad", colonia: "Anáhuac",
+    id: "r_1038", category: "poca_iluminacion", coordinates: [-100.4115, 25.6588], street: "Av. Morones Prieto, cerca de la UDEM", colonia: "San Pedro Garza García",
     createdAt: "2026-10-04T20:10:00-06:00", status: "enviado", confirmations: 3, pendingDetails: true,
     timeline: [{ status: "enviado", at: "2026-10-04T20:10:00-06:00", text: "Reporte enviado. Falta completar los detalles." }],
   },
   {
-    id: "r_1021", category: "alta_velocidad", coordinates: [-100.2948, 25.7401], street: "Av. Universidad", colonia: "Las Puentes",
+    id: "r_1021", category: "alta_velocidad", coordinates: [-100.4035, 25.6562], street: "Av. Morones Prieto", colonia: "San Pedro Garza García",
     createdAt: "2026-10-02T18:25:00-06:00", status: "atendido", confirmations: 11,
     timeline: [
       { status: "enviado", at: "2026-10-02T18:25:00-06:00", text: "Reporte enviado." },
@@ -24,7 +24,7 @@ export const mockReports: Report[] = [
     ],
   },
   {
-    id: "r_1009", category: "robo", coordinates: [-100.3068, 25.7292], street: "Av. Sendero y Fidel Velázquez", colonia: "Valle de Santa Lucía",
+    id: "r_1009", category: "robo", coordinates: [-100.4142, 25.6598], street: "Entrada principal de la UDEM", colonia: "San Pedro Garza García",
     createdAt: "2026-09-29T21:05:00-06:00", status: "en_revision", confirmations: 4,
     timeline: [
       { status: "enviado", at: "2026-09-29T21:05:00-06:00", text: "Reporte enviado." },
@@ -32,7 +32,7 @@ export const mockReports: Report[] = [
     ],
   },
   {
-    id: "r_0997", category: "calle_cerrada", coordinates: [-100.2891, 25.7432], street: "Calle Ignacio Sepúlveda", colonia: "Anáhuac",
+    id: "r_0997", category: "calle_cerrada", coordinates: [-100.4002, 25.6528], street: "Calle junto a la salida de casa", colonia: "San Pedro Garza García",
     createdAt: "2026-09-27T08:15:00-06:00", status: "atendido", confirmations: 2,
     timeline: [
       { status: "enviado", at: "2026-09-27T08:15:00-06:00", text: "Reporte enviado." },

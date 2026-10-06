@@ -38,7 +38,7 @@ export default function RegistroPage() {
   const [pref, setPref] = useState(70);
   const [extra, setExtra] = useState(10);
 
-  const finish = () => router.push("/mapa");
+  const finish = () => router.push("/inicio");
   const next = () => (step < TOTAL ? setStep(step + 1) : finish());
   const prefText = pref < 34 ? "Prioriza llegar rápido, aunque pases por calles con más riesgo." : pref < 67 ? "Equilibra tiempo y seguridad en cada trayecto." : "Prioriza ciclovías y calles tranquilas, aunque tardes más.";
 
@@ -109,7 +109,7 @@ export default function RegistroPage() {
               {[
                 { i: <ShieldCheck size={22} />, t: "Calcular rutas seguras", d: "Desde donde estás hasta tu destino." },
                 { i: <BellRing size={22} />, t: "Avisarte de alertas cercanas", d: "Baches, accidentes o calles cerradas en tu camino." },
-                { i: <LocateFixed size={22} />, t: "Grabar tus rodadas", d: "Tu recorrido, tiempo y distancia. Tú decides cuándo empezar." },
+                { i: <LocateFixed size={22} />, t: "Registrar tus rodadas", d: "Tu recorrido, tiempo y distancia. Tú decides cuándo empezar." },
               ].map((x) => (
                 <li key={x.t} className="flex gap-3">
                   <span className="mt-0.5 text-brand-600">{x.i}</span>

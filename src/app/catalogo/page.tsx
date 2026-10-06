@@ -12,10 +12,16 @@ const groups = [
     ],
   },
   {
-    title: "Rutas y mapa",
+    title: "Inicio y amigos",
     items: [
-      { n: "4", t: "Mapa (inicio)", href: "/mapa" },
-      { n: "5", t: "Planificar ruta", href: "/rutas" },
+      { n: "4", t: "Inicio: mis rodadas, comunidad y amigos", href: "/inicio" },
+      { n: "4b", t: "Amigos: lista, solicitudes y agregar", href: "/amigos" },
+    ],
+  },
+  {
+    title: "Mapa y rutas",
+    items: [
+      { n: "5", t: "Mapa: riesgo, destino y 3 opciones de ruta", href: "/mapa" },
       { n: "5b", t: "Desglose del Safety Score: Más segura", href: "/rutas/segura" },
       { n: "5c", t: "Desglose del Safety Score: Más rápida", href: "/rutas/rapida" },
     ],
@@ -23,7 +29,8 @@ const groups = [
   {
     title: "Rodada",
     items: [
-      { n: "6", t: "Rodada en vivo / navegación", href: "/rodada?ruta=segura" },
+      { n: "6", t: "Comenzar: rodada libre sin ruta", href: "/rodada" },
+      { n: "6b", t: "Rodada guiada con ruta", href: "/rodada?ruta=segura" },
       { n: "7", t: "Reporte rápido (botón rojo dentro de la rodada)", href: "/rodada?ruta=segura" },
       { n: "8", t: "Resumen de la rodada", href: "/rodada/resumen?ruta=segura" },
     ],

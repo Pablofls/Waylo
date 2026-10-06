@@ -14,7 +14,7 @@ export default async function RutaDetalle({ params }: { params: Promise<{ id: st
 
   return (
     <>
-      <ScreenHeader title={route.label} subtitle={`vía ${route.via}`} back="/rutas" />
+      <ScreenHeader title={route.label} subtitle={`vía ${route.via}`} back="/mapa" />
       <div className="flex-1 overflow-y-auto">
         <section className="border-b border-line px-4 pb-5 pt-2">
           <div className="flex items-end justify-between">
