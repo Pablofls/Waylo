@@ -242,6 +242,8 @@ export interface Subscription {
   /** Fecha de fin cuando ya se canceló pero sigue vigente. */
   until?: string;
   cancelled?: boolean;
+  /** Últimos 4 dígitos de la tarjeta del último pago. */
+  last4?: string;
 }
 
 export interface Club {

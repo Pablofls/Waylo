@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/Button";
 import { useSocial } from "@/lib/social";
 import { riskAt } from "@/lib/map/risk";
 import { checkGps, useRide } from "@/lib/geo/useRide";
+import { requestMotionPermission, useFallDetection } from "@/lib/geo/useFallDetection";
 import { useGpsPublisher } from "@/lib/realtime/hooks";
 import { api, errorText } from "@/lib/api";
 import { MONTERREY_CENTER, routeProgress } from "@/lib/map/geo";
@@ -48,11 +49,10 @@ export function LiveRide({ route, steps, alerts, risk }: Props) {
   const [dismissed, setDismissed] = useState<string | null>(null);
   const [vehicle, setVehicle] = useState<"bicicleta" | "scooter">("bicicleta");
 
-  const { emergencyContacts } = useSocial();
+  const { fallDetection, fallSeconds, liveShare, startLiveShare, stopLiveShare } = useSocial();
   const [shareOpen, setShareOpen] = useState(false);
-  const [sharingWith, setSharingWith] = useState<string[]>([]);
+  const sharingWith = liveShare?.with ?? [];
   const [sosOpen, setSosOpen] = useState(false);
-  const [alerted, setAlerted] = useState(false);
   const [fall, setFall] = useState(false);
   const [rideId, setRideId] = useState<string | null>(null);
   const [gpsIssue, setGpsIssue] = useState<"denied" | "unavailable" | null>(null);
@@ -63,6 +63,7 @@ export function LiveRide({ route, steps, alerts, risk }: Props) {
   const { publish } = useGpsPublisher(rideId);
   const ride = useRide({ active, paused, onSample: publish });
   useWakeLock(active);
+  useFallDetection(active && !paused && fallDetection, () => setFall(true));
 
   const nav = guided && ride.position ? routeProgress(ride.position, route.coordinates) : null;
   const progress = nav ? nav.fraction : 0;
@@ -84,6 +85,7 @@ export function LiveRide({ route, steps, alerts, risk }: Props) {
     try {
       const gps = await checkGps();
       if (gps !== "ok") return setGpsIssue(gps);
+      void requestMotionPermission();
       setGpsIssue(null);
       const r = await api<{ id: string }>("/api/rodadas", "POST", { vehiculo: vehicle, rutaOpcionId: route?.optionId });
       setRideId(r.id);
@@ -102,6 +104,7 @@ export function LiveRide({ route, steps, alerts, risk }: Props) {
   const finish = async () => {
     if (!rideId) return;
     try {
+      if (sharingWith.length > 0) stopLiveShare();
       await api(`/api/rodadas/${rideId}/finalizar`, "POST");
       router.push(`/rodada/resumen?id=${rideId}`);
     } catch (e) {
@@ -251,9 +254,9 @@ export function LiveRide({ route, steps, alerts, risk }: Props) {
         </div>
       )}
 
-      <ShareTripSheet open={shareOpen} sharingWith={sharingWith} etaLabel={route ? `${Math.max(1, Math.round(route.minutes * (1 - progress)))} min` : "sin destino"} onStart={setSharingWith} onStop={() => setSharingWith([])} onClose={() => setShareOpen(false)} />
-      <EmergencySheet open={sosOpen} alerted={alerted} onAlert={() => setAlerted(true)} onSimulateFall={() => { setSosOpen(false); setFall(true); }} onClose={() => setSosOpen(false)} />
-      {fall && <FallAlert contactNames={emergencyContacts.map((c) => c.name.split(" ")[0])} onOk={() => setFall(false)} />}
+      <ShareTripSheet open={shareOpen} sharingWith={sharingWith} etaLabel={route ? `${Math.max(1, Math.round(route.minutes * (1 - progress)))} min` : "sin destino"} onStart={(ids) => startLiveShare(ids, null)} onStop={stopLiveShare} onClose={() => setShareOpen(false)} />
+      <EmergencySheet open={sosOpen} position={ride.position} rideId={rideId} onSimulateFall={process.env.NODE_ENV === "production" ? undefined : () => { setSosOpen(false); setFall(true); }} onClose={() => setSosOpen(false)} />
+      {fall && <FallAlert seconds={fallSeconds} position={ride.position} rideId={rideId} onOk={() => setFall(false)} />}
       <ReportSheet open={sheet} onClose={() => setSheet(false)} position={ride.position} rideId={rideId} onSaved={() => setReportCount((n) => n + 1)} locationLabel="Tu ubicación en la rodada" />
     </div>
   );

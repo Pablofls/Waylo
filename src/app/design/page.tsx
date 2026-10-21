@@ -10,7 +10,14 @@ import { RouteOptionCard } from "@/components/domain/RouteOptionCard";
 import { AlertBanner } from "@/components/domain/AlertBanner";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Logo } from "@/components/layout/Logo";
-import { mockRoutes } from "@/mocks/routes";
+import { notFound } from "next/navigation";
+import type { RouteOption } from "@/types";
+
+// Valores de muestra solo para la guía de estilos (esta página no existe en producción).
+const sample = (id: RouteOption["id"], label: string, minutes: number, km: number, safetyScore: number, extraMinutes: number): RouteOption => ({
+  id, label, minutes, km, safetyScore, extraMinutes, via: "Av. de ejemplo", summary: "", coordinates: [], factors: [],
+});
+const sampleRoutes = [sample("rapida", "Más rápida", 12, 3.1, 61, 0), sample("equilibrada", "Equilibrada", 14, 3.4, 78, 2), sample("segura", "Más segura", 17, 3.9, 91, 5)];
 
 const brand = [
   { n: "brand-900", h: "#072E28", u: "Fondos oscuros, navegación nocturna" },
@@ -48,6 +55,7 @@ function Swatch({ n, h, u, border }: { n: string; h: string; u?: string; border?
 }
 
 export default function DesignPage() {
+  if (process.env.NODE_ENV === "production") notFound();
   return (
     <main className="mx-auto max-w-4xl px-4 pb-20 pt-10 md:px-8">
       <header className="pb-10">
@@ -127,8 +135,8 @@ export default function DesignPage() {
 
       <Section title="Tarjetas">
         <div className="grid max-w-3xl gap-3 md:grid-cols-2">
-          <RouteOptionCard route={mockRoutes[1]} />
-          <RouteOptionCard route={mockRoutes[2]} selected recommended />
+          <RouteOptionCard route={sampleRoutes[1]} />
+          <RouteOptionCard route={sampleRoutes[2]} selected recommended />
           <Card>
             <p className="text-sm font-semibold text-muted">Tu mes</p>
             <div className="mt-2 flex gap-8"><StatBlock value="112.4" unit="km" label="Recorridos" /><StatBlock value="18" label="Rodadas" /></div>

@@ -22,7 +22,7 @@ export default function Splash() {
       </div>
       <div className="pb-6">
         <Button href="/login" size="lg" full className="!bg-white !text-brand-900">Comenzar</Button>
-        <Link href="/catalogo" className="mt-2 flex min-h-[44px] items-center justify-center text-sm text-white/60">Ver catálogo de pantallas</Link>
+        {process.env.NODE_ENV !== "production" && <Link href="/catalogo" className="mt-2 flex min-h-[44px] items-center justify-center text-sm text-white/60">Ver catálogo de pantallas (desarrollo)</Link>}
       </div>
     </div>
   );

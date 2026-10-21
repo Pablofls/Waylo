@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { Logo } from "@/components/layout/Logo";
 
@@ -103,6 +104,7 @@ const groups = [
 ];
 
 export default function Catalogo() {
+  if (process.env.NODE_ENV === "production") notFound();
   return (
     <main className="mx-auto max-w-xl px-4 pb-16 pt-10">
       <Logo size="md" />

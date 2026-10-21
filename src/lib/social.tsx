@@ -57,23 +57,30 @@ interface SessionCtx {
   removeSavedRoute: (id: string) => void;
   emergencyContacts: EmergencyContact[];
   saveEmergencyContact: (c: EmergencyContact) => void;
+  /** Registra una emergencia (caída o SOS) y devuelve su id para cerrarla. */
+  openEmergency: (tipo: "caida_detectada" | "sos_manual", at: LngLat | null, rideId?: string | null) => Promise<string>;
+  closeEmergency: (id: string, resultado: "falsa_alarma" | "contactos_avisados") => Promise<void>;
   removeEmergencyContact: (id: string) => void;
   fallDetection: boolean;
   setFallDetection: (v: boolean) => void;
+  /** Segundos de espera antes de avisar tras una caída. */
+  fallSeconds: number;
   blocked: string[];
   block: (id: string) => void;
   unblock: (id: string) => void;
   subscription: Subscription;
-  subscribe: () => void;
+  /** Pago simulado: solo recibe los últimos 4 dígitos de la tarjeta. */
+  subscribe: (last4: string) => Promise<{ folio: string }>;
+  reactivateSubscription: () => void;
   cancelSubscription: () => void;
   searchHistory: Place[];
   addSearch: (p: Place) => void;
   removeSearch: (name: string) => void;
   clearSearches: () => void;
   offlineMaps: string[];
-  toggleOfflineMap: (id: string) => void;
+  toggleOfflineMap: (id: string) => Promise<void>;
   liveShare: { with: string[]; hours: number | null } | null;
-  startLiveShare: (names: string[], hours: number | null) => void;
+  startLiveShare: (ids: string[], hours: number | null) => void;
   stopLiveShare: () => void;
   kudos: string[];
   toggleKudo: (activityId: string) => void;
@@ -114,6 +121,12 @@ interface Props {
   settings: Settings;
   municipalities: { clave: string; nombre: string }[];
   confirmations: Record<string, "sigue" | "resuelto">;
+  fallDetection: boolean;
+  fallSeconds: number;
+  subscription: Subscription;
+  offlineMaps: string[];
+  liveShare: { with: string[]; hours: number | null } | null;
+  joinedChallenges: string[];
   children: React.ReactNode;
 }
 
@@ -140,7 +153,7 @@ async function uploadPhoto(reportId: string, file: File) {
  * acción aplica el cambio de inmediato (optimista), llama a la API y vuelve a pedir los datos del servidor
  * (`router.refresh()`); si la API falla, el cambio se revierte y `actionError` explica por qué.
  */
-export function SocialProvider({ me: initialMe, people: initialPeople, rides: initialRides, myRides: initialMyRides, savedPlaces: initialPlaces, notifications: initialNotifs, savedRoutes: initialRoutes, emergencyContacts: initialContacts, searchHistory: initialSearches, clubs: initialClubs, publicPlaces, suggestions, blocked: initialBlocked, kudos: initialKudos, settings: initialSettings, municipalities, confirmations: initialConfirmations, children }: Props) {
+export function SocialProvider({ me: initialMe, people: initialPeople, rides: initialRides, myRides: initialMyRides, savedPlaces: initialPlaces, notifications: initialNotifs, savedRoutes: initialRoutes, emergencyContacts: initialContacts, searchHistory: initialSearches, clubs: initialClubs, publicPlaces, suggestions, blocked: initialBlocked, kudos: initialKudos, settings: initialSettings, municipalities, confirmations: initialConfirmations, fallDetection: initialFall, fallSeconds, subscription: initialSub, offlineMaps: initialMaps, liveShare: initialShare, joinedChallenges: initialJoined, children }: Props) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [actionError, setActionError] = useState<string | null>(null);
@@ -166,19 +179,19 @@ export function SocialProvider({ me: initialMe, people: initialPeople, rides: in
   const [rides, setRides] = useOptimistic<GroupRide[], Updater<GroupRide[]>>(initialRides, (cur, fn) => fn(cur));
   const [myRides, setMyRides] = useOptimistic<Ride[], Updater<Ride[]>>(initialMyRides, (cur, fn) => fn(cur));
   const [places, setPlaces] = useOptimistic<SavedPlace[], Updater<SavedPlace[]>>(initialPlaces, (cur, fn) => fn(cur));
-  const [notifs, setNotifs] = useState(initialNotifs);
+  const [notifs, setNotifs] = useOptimistic<AppNotification[], Updater<AppNotification[]>>(initialNotifs, (cur, fn) => fn(cur));
   const [confirmations, setConfirmations] = useOptimistic<Record<string, "sigue" | "resuelto">, Updater<Record<string, "sigue" | "resuelto">>>(initialConfirmations, (cur, fn) => fn(cur));
   const [routes, setRoutes] = useOptimistic<SavedRoute[], Updater<SavedRoute[]>>(initialRoutes, (cur, fn) => fn(cur));
-  const [contacts, setContacts] = useState(initialContacts);
-  const [fallDetection, setFallDetection] = useState(true);
+  const [contacts, setContacts] = useOptimistic<EmergencyContact[], Updater<EmergencyContact[]>>(initialContacts, (cur, fn) => fn(cur));
+  const [fallDetection, setFallDetection] = useOptimistic<boolean, boolean>(initialFall, (_cur, v) => v);
   const [blocked, setBlocked] = useOptimistic<string[], Updater<string[]>>(initialBlocked, (cur, fn) => fn(cur));
-  const [subscription, setSubscription] = useState<Subscription>({ active: false });
+  const [subscription, setSubscription] = useOptimistic<Subscription, Updater<Subscription>>(initialSub, (cur, fn) => fn(cur));
   const [searches, setSearches] = useOptimistic<Place[], Updater<Place[]>>(initialSearches, (cur, fn) => fn(cur));
-  const [offlineMaps, setOfflineMaps] = useState<string[]>([]);
-  const [liveShare, setLiveShare] = useState<{ with: string[]; hours: number | null } | null>(null);
+  const [liveShare, setLiveShare] = useOptimistic<{ with: string[]; hours: number | null } | null, { with: string[]; hours: number | null } | null>(initialShare, (_cur, v) => v);
+  const offlineMaps = initialMaps;
   const [kudos, setKudos] = useOptimistic<string[], Updater<string[]>>(initialKudos, (cur, fn) => fn(cur));
   const [clubs, setClubs] = useOptimistic<Club[], Updater<Club[]>>(initialClubs, (cur, fn) => fn(cur));
-  const [joinedChallenges, setJoinedChallenges] = useState<string[]>(["ch_1", "ch_2"]);
+  const [joinedChallenges, setJoinedChallenges] = useOptimistic<string[], Updater<string[]>>(initialJoined, (cur, fn) => fn(cur));
 
   const setRelation = useCallback(
     (id: string, relation: Relation, who?: Person) => {
@@ -244,8 +257,8 @@ export function SocialProvider({ me: initialMe, people: initialPeople, rides: in
       removeSavedPlace: (id) => act(() => setPlaces((ps) => ps.filter((p) => p.id !== id)), () => api(`/api/lugares/guardados/${id}`, "DELETE")),
       notifications: notifs,
       unreadCount: notifs.filter((n) => !n.read).length,
-      markRead: (id) => setNotifs((ns) => ns.map((n) => (n.id === id ? { ...n, read: true } : n))),
-      markAllRead: () => setNotifs((ns) => ns.map((n) => ({ ...n, read: true }))),
+      markRead: (id) => act(() => setNotifs((ns) => ns.map((n) => (n.id === id ? { ...n, read: true } : n))), () => api(`/api/notificaciones/${id}/leida`, "POST")),
+      markAllRead: () => act(() => setNotifs((ns) => ns.map((n) => ({ ...n, read: true }))), () => api("/api/notificaciones/leidas", "POST")),
       createReport: async (categoria, at, rodadaId) => {
         await api("/api/reportes", "POST", { categoria, lng: at[0], lat: at[1], rodadaId: rodadaId ?? undefined });
         router.refresh();
@@ -269,10 +282,24 @@ export function SocialProvider({ me: initialMe, people: initialPeople, rides: in
       addSavedRoute: (r, from, to) => act(() => setRoutes((x) => [...x, r]), () => api("/api/rutas/guardadas", "POST", { name: r.name, from, to, routeId: r.routeId })),
       removeSavedRoute: (id) => act(() => setRoutes((x) => x.filter((r) => r.id !== id)), () => api(`/api/rutas/guardadas/${id}`, "DELETE")),
       emergencyContacts: contacts,
-      saveEmergencyContact: (c) => setContacts((x) => (x.some((y) => y.id === c.id) ? x.map((y) => (y.id === c.id ? c : y)) : [...x, c])),
-      removeEmergencyContact: (id) => setContacts((x) => x.filter((c) => c.id !== id)),
+      saveEmergencyContact: (c) => {
+        const exists = contacts.some((y) => y.id === c.id);
+        act(
+          () => setContacts((x) => (exists ? x.map((y) => (y.id === c.id ? c : y)) : [...x, c])),
+          () => (exists ? api(`/api/contactos/${c.id}`, "PUT", c) : api("/api/contactos", "POST", c)),
+        );
+      },
+      removeEmergencyContact: (id) => act(() => setContacts((x) => x.filter((c) => c.id !== id)), () => api(`/api/contactos/${id}`, "DELETE")),
+      openEmergency: async (tipo, at, rideId) => {
+        const r = await api<{ id: string }>("/api/emergencias", "POST", { tipo, lng: at?.[0], lat: at?.[1], rodadaId: rideId ?? undefined });
+        return r.id;
+      },
+      closeEmergency: async (id, resultado) => {
+        await api(`/api/emergencias/${id}/cierre`, "POST", { resultado });
+      },
       fallDetection,
-      setFallDetection,
+      fallSeconds,
+      setFallDetection: (v) => act(() => setFallDetection(v), () => api("/api/ajustes/caidas", "PUT", { activa: v })),
       blocked,
       block: (id) =>
         act(
@@ -284,8 +311,13 @@ export function SocialProvider({ me: initialMe, people: initialPeople, rides: in
         ),
       unblock: (id) => act(() => setBlocked((x) => x.filter((b) => b !== id)), () => api(`/api/bloqueos/${id}`, "DELETE")),
       subscription,
-      subscribe: () => setSubscription({ active: true }),
-      cancelSubscription: () => setSubscription({ active: true, cancelled: true, until: "2026-11-20" }),
+      subscribe: async (last4) => {
+        const r = await api<{ folio: string }>("/api/premium/suscripcion", "POST", { ultimos4: last4 });
+        router.refresh();
+        return r;
+      },
+      reactivateSubscription: () => act(() => setSubscription((s) => ({ ...s, cancelled: false })), () => api("/api/premium/suscripcion", "PATCH")),
+      cancelSubscription: () => act(() => setSubscription((s) => ({ ...s, cancelled: true })), () => api("/api/premium/suscripcion", "DELETE")),
       searchHistory: searches,
       addSearch: (p) => p.id && act(() => setSearches((x) => [p, ...x.filter((y) => y.id !== p.id)].slice(0, 6)), () => api("/api/busquedas", "POST", { lugarId: p.id })),
       removeSearch: (name) => {
@@ -294,10 +326,15 @@ export function SocialProvider({ me: initialMe, people: initialPeople, rides: in
       },
       clearSearches: () => act(() => setSearches(() => []), () => api("/api/busquedas", "DELETE")),
       offlineMaps,
-      toggleOfflineMap: (id) => setOfflineMaps((x) => (x.includes(id) ? x.filter((y) => y !== id) : [...x, id])),
+      toggleOfflineMap: async (id) => {
+        const had = offlineMaps.includes(id);
+        await api(`/api/mapas/${id}`, had ? "DELETE" : "PUT");
+        router.refresh();
+      },
       liveShare,
-      startLiveShare: (names, hours) => setLiveShare({ with: names, hours }),
-      stopLiveShare: () => setLiveShare(null),
+      startLiveShare: (ids, hours) =>
+        act(() => setLiveShare({ with: ids.map((id) => people.find((p) => p.id === id)?.name.split(" ")[0] ?? "Amigo"), hours }), () => api("/api/comparticion", "POST", { destinatarios: ids, horas: hours })),
+      stopLiveShare: () => act(() => setLiveShare(null), () => api("/api/comparticion", "DELETE")),
       kudos,
       toggleKudo: (id) => {
         const had = kudos.includes(id);
@@ -330,9 +367,12 @@ export function SocialProvider({ me: initialMe, people: initialPeople, rides: in
         return r.id;
       },
       joinedChallenges,
-      toggleChallenge: (id) => setJoinedChallenges((x) => (x.includes(id) ? x.filter((y) => y !== id) : [...x, id])),
+      toggleChallenge: (id) => {
+        const had = joinedChallenges.includes(id);
+        act(() => setJoinedChallenges((x) => (had ? x.filter((y) => y !== id) : [...x, id])), () => api(`/api/retos/${id}/participacion`, had ? "DELETE" : "POST"));
+      },
     }),
-    [publicPlaces, suggestions, settings, municipalities, actionError, act, router, me, people, rides, myRides, places, notifs, confirmations, routes, contacts, fallDetection, blocked, subscription, searches, offlineMaps, liveShare, kudos, clubs, joinedChallenges, setRelation, patchRide],
+    [fallSeconds, publicPlaces, suggestions, settings, municipalities, actionError, act, router, me, people, rides, myRides, places, notifs, confirmations, routes, contacts, fallDetection, blocked, subscription, searches, offlineMaps, liveShare, kudos, clubs, joinedChallenges, setRelation, patchRide],
   );
 
   return (

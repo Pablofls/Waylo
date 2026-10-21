@@ -11,21 +11,14 @@ import { misAjustes, municipios } from "@/server/ajustes";
 import { actividadAmigos, actividadComunidad, misBloqueados, misReacciones, persona, personasConocidas, publicacion, sugerencias } from "@/server/social";
 import { rodadasGrupales } from "@/server/grupales";
 import { clubes } from "@/server/clubes";
+import { misInsignias, rankingAmigos, retos } from "@/server/logros";
+import { notificaciones } from "@/server/notificaciones";
+import { configCaidas, misContactos } from "@/server/seguridad";
+import { areasMapa, miComparticion, misMapas, quienComparteConmigo } from "@/server/mapas";
+import { miPago, misPagos, miSuscripcion, precioPlan } from "@/server/premium";
+import { zona, zonas } from "@/server/zonas";
 import { puntosDeRiesgo } from "@/server/riesgo";
 import { estadisticaMes, misRodadas, miRodada, resumenRodada } from "@/server/rodadas";
-import { mockReports, communityReports } from "@/mocks/reports";
-import { mockRides, monthStats, communityRides } from "@/mocks/rides";
-import { mockGroupRides } from "@/mocks/group-rides";
-import { mockBadges, confirmedReports } from "@/mocks/badges";
-import { riskPoints } from "@/mocks/risk-points";
-import { people, friendActivity } from "@/mocks/people";
-import { clubs, challenges } from "@/mocks/clubs";
-import { comments } from "@/mocks/comments";
-import { zones } from "@/mocks/zones";
-import { emergencyContacts } from "@/mocks/emergency";
-import { notifications } from "@/mocks/notifications";
-
-const wait = <T,>(v: T) => Promise.resolve(v);
 
 /** Id de la persona con sesión; si no hay, manda a iniciar sesión. */
 export async function sessionUserId(): Promise<string> {
@@ -80,14 +73,25 @@ export const getPost = async (id: string) => publicacion(await sessionUserId(), 
 export const getGroupRides = async () => rodadasGrupales(await sessionUserId());
 export const getClubs = async () => clubes(await sessionUserId());
 
+export const getBadges = async () => misInsignias(await sessionUserId());
+export const getChallenges = async () => retos(await sessionUserId());
+export const getRanking = async () => rankingAmigos(await sessionUserId());
+export const getNotifications = async () => notificaciones(await sessionUserId());
+export const getEmergencyContacts = async () => misContactos(await sessionUserId());
+export const getFallConfig = async () => configCaidas(await sessionUserId());
+export const getSubscription = async () => miSuscripcion(await sessionUserId());
+export const getPayments = async () => misPagos(await sessionUserId());
+export const getPayment = async (folio: string) => miPago(await sessionUserId(), folio);
+export const getPlan = () => precioPlan();
+export const getOfflineAreas = () => areasMapa();
+export const getMyOfflineMaps = async () => misMapas(await sessionUserId());
+export const getLiveShare = async () => miComparticion(await sessionUserId());
+export const getSharers = async () => quienComparteConmigo(await sessionUserId());
+export const getZones = () => zonas();
+export const getZone = (id: string) => zona(id);
+
 export async function getUser() {
   const u = await getOptionalUser();
   if (!u) redirect("/api/auth/sesion-invalida");
   return u;
 }
-export const getBadges = () => wait({ badges: mockBadges, confirmedReports });
-export const getNotifications = () => wait(notifications);
-export const getEmergencyContacts = () => wait(emergencyContacts);
-export const getChallenges = () => wait(challenges);
-export const getZones = () => wait(zones);
-export const getZone = (id: string) => wait(zones.find((z) => z.id === id) ?? null);
