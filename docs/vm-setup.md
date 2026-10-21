@@ -126,6 +126,14 @@ sudo chown root:pablogcp26 /etc/waylo/waylo.env && sudo chmod 640 /etc/waylo/way
 sudo nano /etc/waylo/waylo.env
 ```
 
+Carpeta de fotos de reportes (fuera del repositorio, con escritura para el usuario del servicio web):
+
+```bash
+sudo mkdir -p /var/lib/waylo/uploads && sudo chown pablogcp26:pablogcp26 /var/lib/waylo/uploads && sudo chmod 750 /var/lib/waylo/uploads
+```
+
+Si `/etc/waylo/waylo.env` se creó antes de agregar estas variables, añade al final `UPLOADS_DIR=/var/lib/waylo/uploads` y `APP_URL=https://34-51-108-167.sslip.io`.
+
 Instala las unidades. Antes confirma la ruta de Node con `command -v npm`; si no es `/usr/bin/npm`, ajusta `ExecStart` en `waylo-web.service`.
 
 ```bash

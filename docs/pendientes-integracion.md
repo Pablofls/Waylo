@@ -30,3 +30,19 @@ Lista viva que mantiene la sesión principal. Cada punto indica quién lo resuel
 - `deploy.sh` carga `MIGRATOR_DATABASE_URL` desde `/etc/waylo/migrator.env` (permisos 600), separado de `waylo.env`: la app no tiene permisos de DDL.
 - El token JWT viaja en la URL del WebSocket: la ruta `/ws` no se registra en el log de accesos de Apache (`SetEnvIf` y `env=!waylo_nolog`).
 - Apache (no Nginx) es el servidor que ya corre en la VM: la configuración de proxy vive en `deploy/httpd/`.
+
+## Pendientes de producto (de la sesión C; detalle en `docs/propuestas/app-datos.md`)
+
+| Tema | Estado | Qué falta |
+|---|---|---|
+| Correo (verificación y recuperar contraseña) | Sin proveedor | Contratar uno (Resend, Amazon SES u otro) e implementar `Mailer`. Hoy nadie recibe códigos y la recuperación de contraseña no es operativa. El registro y el inicio de sesión funcionan sin verificar el correo. |
+| Motor de rutas | Solo semillas de demostración | Elegir proveedor (OpenRouteService, Valhalla, OSRM) y que `calcularRutas` escriba `ruta_consulta`/`ruta_opcion`. Recalcular al desviarse. |
+| Safety Score de rodada libre | Estimado en la app | Llevar la fórmula a una vista (`v_rodada_score_libre`). |
+| Compartir ubicación sin rodada | Solo mientras se graba una rodada | Rodada ligera "Ubicación compartida" creada por la app. |
+| Notificaciones de alerta, estado de reporte y recordatorios | Las genera nadie | Proceso programado o disparadores. |
+| `reporte.colonia_id` | Siempre vacío | Polígonos de colonias o geocodificación inversa. |
+| Aprobar solicitudes de ingreso a un club | Sin pantalla | Pantalla del propietario. |
+| Aviso automático a contactos de emergencia | Abre la app de mensajes | Proveedor de SMS o WhatsApp. |
+| Mapas sin conexión | Solo registra la elección | Formato (PMTiles) y dónde se sirven. |
+| Cobro recurrente de Premium | Pago simulado | Pasarela de pagos. |
+| Límite de intentos | En memoria | Moverlo a una tabla si hay más de una instancia. |

@@ -38,7 +38,9 @@ export async function body<T>(req: Request, schema: ZodType<T>): Promise<T> {
 }
 
 export function clientIp(req: Request): string {
-  return req.headers.get("x-forwarded-for")?.split(",")[0].trim() || req.headers.get("x-real-ip") || "desconocida";
+  // Apache agrega la IP real AL FINAL de x-forwarded-for; lo que venga antes lo puede inventar el cliente.
+  const forwarded = req.headers.get("x-forwarded-for")?.split(",").map((s) => s.trim()).filter(Boolean).pop();
+  return forwarded || req.headers.get("x-real-ip") || "desconocida";
 }
 
 type Handler<C> = (req: Request, ctx: C) => Promise<Response | object | null | void>;
