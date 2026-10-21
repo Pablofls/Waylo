@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import pytest
 
 from hub import Client, Hub
+from rides import RideRegistry, RideUnverifiable
 from store import BatchWriter, PositionStore
 
 
@@ -26,6 +27,19 @@ class FakeStore(PositionStore):
         self.batches.append(points)
 
 
+class FakeRegistry(RideRegistry):
+    """Acepta todo salvo que se configure `active` (conjunto de (user_id, ride_id)) o `fail`."""
+
+    def __init__(self, active=None):
+        self.active, self.fail, self.calls = active, False, 0
+
+    def is_active(self, user_id, ride_id):
+        self.calls += 1
+        if self.fail:
+            raise RideUnverifiable("OperationalError")
+        return self.active is None or (user_id, ride_id) in self.active
+
+
 class Clock:
     def __init__(self):
         self.t = 1000.0
@@ -44,7 +58,7 @@ def pos(**over):
 @pytest.fixture
 def env():
     clock, store = Clock(), FakeStore()
-    hub = Hub(BatchWriter(store, clock=clock), clock=clock)
+    hub = Hub(BatchWriter(store, start_thread=False), FakeRegistry(), clock=clock)
     return hub, clock, store
 
 
@@ -183,29 +197,18 @@ def test_offline_por_tiempo_a_los_60_s(env):
     assert hub.stats()["active_positions"] == 0
 
 
-def test_persistencia_por_lotes_de_50_puntos(env):
+def test_persistencia_en_lotes_de_50_puntos(env):
     hub, clock, store = env
     g = connect(hub, "gps", "u1")
-    for _ in range(49):
+    for _ in range(120):
         clock.t += 1
         hub.handle_gps_message(g, pos())
-    assert store.batches == []
-    clock.t += 1
-    hub.handle_gps_message(g, pos())
-    assert len(store.batches) == 1 and len(store.batches[0]) == 50
+    assert store.batches == []  # el hub solo encola
+    assert hub.writer.pending == 120
+    hub.writer.flush()
+    assert [len(b) for b in store.batches] == [50, 50, 20]
     assert store.batches[0][0]["user_id"] == "u1"
-
-
-def test_persistencia_por_lotes_cada_5_s(env):
-    hub, clock, store = env
-    g = connect(hub, "gps", "u1")
-    hub.handle_gps_message(g, pos())
-    clock.t += 4
-    hub.sweep()
-    assert store.batches == []
-    clock.t += 1
-    hub.sweep()
-    assert len(store.batches) == 1 and len(store.batches[0]) == 1
+    assert hub.writer.pending == 0
 
 
 def test_fallo_del_almacen_conserva_puntos(env):
@@ -221,8 +224,8 @@ def test_fallo_del_almacen_conserva_puntos(env):
     store.save_points = boom
     g = connect(hub, "gps", "u1")
     hub.handle_gps_message(g, pos())
-    clock.t += 5
-    hub.sweep()
-    clock.t += 5
-    hub.sweep()
+    hub.writer.flush()
+    assert hub.writer.pending == 1 and hub.writer.last_error == "RuntimeError"
+    hub.writer.flush()
     assert len(store.batches) == 1 and len(store.batches[0]) == 1
+    assert hub.writer.pending == 0 and hub.writer.last_error is None

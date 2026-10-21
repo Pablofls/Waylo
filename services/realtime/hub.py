@@ -5,6 +5,7 @@ import logging
 import threading
 import time
 
+from rides import RideUnverifiable
 from validation import RateLimiter, ValidationError, validate_position
 
 log = logging.getLogger("waylo.hub")
@@ -22,8 +23,8 @@ class Client:
 
 
 class Hub:
-    def __init__(self, writer, clock=time.monotonic):
-        self.writer, self.clock = writer, clock
+    def __init__(self, writer, registry, clock=time.monotonic):
+        self.writer, self.registry, self.clock = writer, registry, clock
         self._lock = threading.RLock()
         self._clients = set()
         self._positions = {}  # user_id -> {"position": dict, "time": float}
@@ -64,6 +65,13 @@ class Hub:
         if kind != "position":
             return self._reject(client, "invalid_type", "Tipo de mensaje no permitido.")
 
+        # La consulta de la rodada puede tardar (Postgres): va fuera del candado.
+        try:
+            if not self.registry.is_active(client.user_id, msg.get("ride_id")):
+                return self._reject(client, "ride_invalida", "La rodada no existe, no es tuya o ya terminó.")
+        except RideUnverifiable:
+            return self._reject(client, "ride_no_verificable", "No se pudo verificar la rodada; intenta de nuevo.")
+
         with self._lock:
             prev = self._positions.get(client.user_id)
         try:
@@ -79,7 +87,7 @@ class Hub:
         pos["user_id"] = client.user_id
         with self._lock:
             self._positions[client.user_id] = {"position": pos, "time": now}
-            self.writer.add(dict(pos))
+        self.writer.add(dict(pos))  # solo encola; el hilo escritor habla con Postgres
         self._broadcast(client.user_id, {"type": "update", "position": pos})
 
     def _reject(self, client, code, message):
@@ -102,7 +110,6 @@ class Hub:
             expired = [u for u, p in self._positions.items() if now - p["time"] >= EXPIRE_S]
             for u in expired:
                 del self._positions[u]
-            self.writer.flush_if_due()
         for u in expired:
             self._broadcast(u, {"type": "offline", "user_id": u})
 
