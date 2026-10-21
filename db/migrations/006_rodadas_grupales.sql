@@ -9,7 +9,7 @@ CREATE TABLE rodada_grupal (
   titulo          text NOT NULL CHECK (btrim(titulo) <> ''),
   descripcion     text NOT NULL DEFAULT '',
   programada_en   timestamptz NOT NULL,
-  lugar_salida_id uuid NOT NULL REFERENCES lugar (id),
+  lugar_salida_id uuid NOT NULL REFERENCES lugar (id) ON DELETE NO ACTION,
   nivel_clave     text NOT NULL REFERENCES cat_nivel_rodada (clave) ON DELETE RESTRICT,
   ritmo_clave     text NOT NULL REFERENCES cat_ritmo_rodada (clave) ON DELETE RESTRICT,
   distancia_km    numeric(5,1) NOT NULL CHECK (distancia_km > 0),

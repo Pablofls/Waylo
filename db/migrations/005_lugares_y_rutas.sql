@@ -44,11 +44,13 @@ CREATE TABLE historial_busqueda (
 CREATE INDEX historial_busqueda_reciente_idx ON historial_busqueda (usuario_id, buscado_en DESC);
 
 -- Una consulta de ruta (origen y destino) produce hasta tres opciones, una por tipo de ruta.
+-- Los FK a lugar usan NO ACTION (se valida al final de la sentencia): así borrar a una persona puede
+-- eliminar en cascada sus lugares privados y sus rutas en el mismo DELETE sin que RESTRICT lo impida.
 CREATE TABLE ruta_consulta (
   id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   usuario_id       uuid NOT NULL REFERENCES usuario (id) ON DELETE CASCADE,
-  origen_lugar_id  uuid NOT NULL REFERENCES lugar (id),
-  destino_lugar_id uuid NOT NULL REFERENCES lugar (id),
+  origen_lugar_id  uuid NOT NULL REFERENCES lugar (id) ON DELETE NO ACTION,
+  destino_lugar_id uuid NOT NULL REFERENCES lugar (id) ON DELETE NO ACTION,
   calculada_en     timestamptz NOT NULL DEFAULT now(),
   CHECK (origen_lugar_id <> destino_lugar_id)
 );
@@ -91,8 +93,8 @@ CREATE TABLE ruta_guardada (
   id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   usuario_id       uuid NOT NULL REFERENCES usuario (id) ON DELETE CASCADE,
   nombre           text NOT NULL CHECK (btrim(nombre) <> ''),
-  origen_lugar_id  uuid NOT NULL REFERENCES lugar (id),
-  destino_lugar_id uuid NOT NULL REFERENCES lugar (id),
+  origen_lugar_id  uuid NOT NULL REFERENCES lugar (id) ON DELETE NO ACTION,
+  destino_lugar_id uuid NOT NULL REFERENCES lugar (id) ON DELETE NO ACTION,
   tipo_ruta_clave  text NOT NULL REFERENCES cat_tipo_ruta (clave) ON DELETE RESTRICT,
   creada_en        timestamptz NOT NULL DEFAULT now(),
   UNIQUE (usuario_id, nombre),
