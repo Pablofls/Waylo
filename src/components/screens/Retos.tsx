@@ -7,25 +7,23 @@ import { Avatar } from "@/components/domain/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Segmented } from "@/components/ui/Segmented";
 import { useSocial } from "@/lib/social";
-import { monthStats } from "@/mocks/rides";
 import type { Challenge } from "@/types";
 
 type Metric = "km" | "rodadas" | "score";
 const unit: Record<Challenge["metric"], string> = { km: "km", rodadas: "rodadas", reportes: "reportes", score: "rodadas" };
 
-export function RetosScreen({ challenges }: { challenges: Challenge[] }) {
-  const { joinedChallenges, toggleChallenge, friends, me } = useSocial();
+export function RetosScreen({ challenges, ranking }: { challenges: Challenge[]; ranking: { id: string; name: string; rides: number; km: number; avgSafetyScore: number }[] }) {
+  const { joinedChallenges, toggleChallenge, me } = useSocial();
   const [tab, setTab] = useState<"retos" | "ranking">("retos");
   const [metric, setMetric] = useState<Metric>("km");
 
-  // Ranking entre tú y tus amigos con las estadísticas del mes (datos de ejemplo)
   const value = (s: { rides: number; km: number; avgSafetyScore: number }) => (metric === "km" ? s.km : metric === "rodadas" ? s.rides : s.avgSafetyScore);
-  const board = [{ id: me.id, name: `${me.name} (tú)`, v: value({ rides: monthStats.rides, km: monthStats.km, avgSafetyScore: monthStats.avgSafetyScore }) }, ...friends.map((f) => ({ id: f.id, name: f.name, v: value({ rides: Math.round(f.stats.rides / 2), km: f.stats.km / 3, avgSafetyScore: f.stats.avgSafetyScore }) }))].sort((a, b) => b.v - a.v);
+  const board = ranking.map((r) => ({ id: r.id, name: r.id === me.id ? `${r.name} (tú)` : r.name, v: value(r) })).sort((a, b) => b.v - a.v);
   const fmt = (v: number) => (metric === "km" ? v.toFixed(1) : String(Math.round(v)));
 
   return (
     <>
-      <ScreenHeader title="Retos y ranking" subtitle="Octubre" back="/comunidad" />
+      <ScreenHeader title="Retos y ranking" subtitle={new Intl.DateTimeFormat("es-MX", { month: "long", timeZone: "America/Monterrey" }).format(new Date()).replace(/^./, (c) => c.toUpperCase())} back="/comunidad" />
       <div className="px-4 pb-2"><Segmented label="Vista" value={tab} onChange={setTab} options={[{ value: "retos", label: "Retos del mes" }, { value: "ranking", label: "Ranking de amigos" }]} /></div>
       <div className="flex-1 overflow-y-auto bg-white pb-6">
         {tab === "retos" ? (
