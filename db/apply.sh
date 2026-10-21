@@ -38,6 +38,8 @@ fi
 
 PSQL=(psql -X -q -v ON_ERROR_STOP=1 --dbname="$MIGRATOR_DATABASE_URL")
 
+"${PSQL[@]}" -tA -c "SELECT 1" >/dev/null || fallo "No se pudo conectar con MIGRATOR_DATABASE_URL (revisa host, usuario y contraseña)."
+
 # Requisitos previos que NO crean las migraciones (los prepara docs/vm-setup.md).
 [ "$("${PSQL[@]}" -tA -c "SELECT count(*) FROM pg_extension WHERE extname = 'postgis'")" = "1" ] \
   || fallo "La extensión postgis no está creada en esta base (ver docs/vm-setup.md, paso 2)."
