@@ -1,45 +1,34 @@
 # Sesiones de trabajo paralelas
 
-Cada sesión se abre aparte, parte de `main` (con `docs/arquitectura.md` ya incluido) y trabaja en su rama. Todas deben leer primero `docs/arquitectura.md` y `docs/vm-setup.md`.
+El trabajo se divide en sesiones independientes, **cada una en su propia rama**. La **sesión principal** (la de coordinación) revisa e integra cada rama a `main`; ninguna otra sesión toca `main`.
 
-Reglas comunes para todas:
-- Responder y comentar en español de México. Sin emojis en la interfaz.
-- Trabajar solo en los archivos de su alcance; no modificar `src/` salvo la sesión C.
-- La VM es compartida con otro proyecto: no tocar sus bases, puertos ni bloques de Nginx.
-- Nunca poner secretos en Git. Solo archivos `.env.example`.
-- No hacer push a `main`: rama propia y pull request.
-- Quien opera la VM es el usuario: cada entrega debe incluir los comandos exactos que debe correr ahí.
+Todas deben leer primero `docs/arquitectura.md`, `docs/vm-setup.md` y [`prompts/reglas-comunes.md`](prompts/reglas-comunes.md) (ramas, propiedad de archivos, orden de integración y reglas generales).
 
----
+## Cómo se usa
 
-## Sesión A: Base de datos (rama `db-esquema`)
+1. Abre una sesión nueva en este repositorio y dile: "Ejecuta `docs/prompts/<archivo>.md`".
+2. La sesión crea su rama desde `main`, trabaja y sube sus cambios a esa rama.
+3. Al terminar te avisa con la rama, el resumen y los comandos para la VM.
+4. Vuelves a la sesión principal y se integra la rama a `main` (pull request o merge revisado).
+5. En la VM: `git pull` en `main` y los comandos que haya entregado la sesión.
 
-El prompt completo, con el requisito de **normalización hasta 4FN**, está en [`docs/prompts/sesion-a-base-de-datos.md`](prompts/sesion-a-base-de-datos.md). En una sesión nueva, escribe:
+## Sesiones
 
-> Analiza la aplicación y ejecuta `docs/prompts/sesion-a-base-de-datos.md`.
+| Sesión | Prompt | Rama | Depende de |
+|---|---|---|---|
+| A. Base de datos (normalizada a 4FN) | [`prompts/sesion-a-base-de-datos.md`](prompts/sesion-a-base-de-datos.md) | `db-esquema` | Nada |
+| B. Servicio en tiempo real (GPS real) | [`prompts/sesion-b-tiempo-real.md`](prompts/sesion-b-tiempo-real.md) | `realtime` | A (para guardar `ride_points`) |
+| D. Despliegue en la VM | [`prompts/sesion-d-despliegue.md`](prompts/sesion-d-despliegue.md) | `despliegue` | Nada |
+| C. App con datos reales | [`prompts/sesion-c-app-datos.md`](prompts/sesion-c-app-datos.md) | `app-datos` | A y B en `main` |
 
----
+Orden de integración: A y D primero, luego B y, al final, C.
 
-## Sesión B: Servicio en tiempo real (rama `realtime`)
+## Integrar una rama (sesión principal)
 
-**Prompt**
+```bash
+git fetch origin && git checkout main && git pull
+git merge --no-ff origin/<rama>
+git push origin main
+```
 
-> Lee `docs/arquitectura.md` (sección Protocolo WebSocket). Implementa en `services/realtime` un microservicio Flask + Flask-Sock que escuche en `REALTIME_HOST:REALTIME_PORT`, con `/ws` (roles `gps` y `map`, JWT HS256, mensajes `snapshot`, `update`, `offline` y `error`), `/health`, validación según el contrato, límite de mensajes, estado actual en memoria, escritura por lotes del historial a la tabla `ride_points` y cierre de conexiones muertas con ping. **No hay vehículos simulados:** no crees un simulador ni generes movimiento; la única fuente de posiciones es el GPS real de los teléfonos conectados con un token válido. Incluye pruebas automatizadas con puntos fijos (un cliente de prueba que envía unos pocos mensajes concretos para validar el protocolo, no una simulación de trayectos) y `requirements.txt`. Mientras la sesión A no entregue el esquema, aísla la escritura a Postgres detrás de una interfaz y usa un almacenamiento falso en las pruebas. Deja los comandos para correrlo en la VM.
-
----
-
-## Sesión D: Despliegue en la VM (rama `despliegue`)
-
-**Prompt**
-
-> Lee `docs/arquitectura.md` y `docs/vm-setup.md`. El servidor es CentOS Stream 10 y ya tiene Nginx sirviendo otro proyecto. Crea en `deploy/`: `nginx/waylo.conf` (server propio para `34-51-108-167.sslip.io` con proxy de `/` a `127.0.0.1:3100`, de `/ws` a `127.0.0.1:5950` con cabeceras de WebSocket y `/health/waylo`; sin tocar los bloques existentes), unidades systemd `waylo-web.service` y `waylo-realtime.service` (usuario sin privilegios, `EnvironmentFile=/etc/waylo/waylo.env`, reinicio automático), `deploy.sh` (git pull, `npm ci`, `next build`, entorno virtual de Python, `db/apply.sh` si existe, reinicio de servicios y verificación de salud) y `.env.example` de producción. Considera SELinux y el firewall. Completa `docs/vm-setup.md` con cualquier corrección y entrégame una lista de comandos exactos, en orden, para ejecutar en la VM.
-
----
-
-## Sesión C: App con datos reales (rama `app-datos`)
-
-Empieza cuando A y B estén integradas en `main`.
-
-**Prompt**
-
-> Lee `docs/arquitectura.md` y `docs/base-de-datos.md`. Reemplaza los mocks de `src/lib/data` por consultas reales a Postgres (`pg`, sin ORM pesado) y el estado en memoria de `src/lib/social.tsx` por llamadas a rutas API de Next.js. Implementa registro, inicio de sesión y sesiones (contraseñas con hash), `POST /api/ws-token` para el servicio en tiempo real, y conecta el cliente al WebSocket para la ubicación en vivo y el seguimiento. **Elimina el modo simulación** (interruptor en Comenzar, `useRide` en modo simulado, rutas de ejemplo como trayectoria): la rodada usa solo el GPS real del teléfono, y en escritorio sin GPS muestra el aviso de `/permisos/ubicacion`. Mantén los componentes sin cambios de interfaz siempre que se pueda. Migra por áreas (cuenta, rodadas, reportes, social, premium) con un commit por área, pruebas de las rutas API y la lista de comandos para correr en la VM.
+Antes de integrar: revisar el diff, comprobar que solo se tocaron los archivos propios de esa sesión (tabla de `reglas-comunes.md`) y que no hay secretos.

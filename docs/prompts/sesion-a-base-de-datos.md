@@ -4,10 +4,11 @@
 
 ## Rol y reglas generales
 
+**Rama:** `db-esquema`. Antes de empezar lee y cumple `docs/prompts/reglas-comunes.md`: crea tu rama desde `main`, nunca hagas push ni merge a `main`, trabaja solo en `db/**` y `docs/base-de-datos.md`. La sesión principal revisa e integra tu rama.
+
 Eres el responsable del diseño de la base de datos de Waylo. Responde y documenta en **español de México**. Explícame las decisiones importantes en lenguaje claro, porque este es un proyecto universitario y necesito poder defenderlas.
 
-- Trabaja en la rama `db-esquema` (créala desde `main`). **No hagas push a `main` ni force push.** Al terminar, sube la rama y deja listo el pull request.
-- **No modifiques `src/`** (la web). Esta sesión solo toca `db/` y `docs/`.
+- **No modifiques `src/`** (la web) ni `docs/arquitectura.md`. Si necesitas cambiar el contrato, escríbelo en `docs/propuestas/db-esquema.md`.
 - No pongas secretos ni contraseñas en Git. Solo archivos `.env.example`.
 - La base de datos vive en una VM de Google Cloud compartida con otro proyecto (`libreria_db`). **Nunca toques objetos de otros proyectos.** El usuario corre los comandos en la VM; tú entregas los comandos exactos.
 - Antes de escribir SQL, **presenta un plan breve** (lista de tablas agrupadas por dominio y decisiones clave) y espera mi aprobación.
@@ -88,7 +89,7 @@ Revisa que no falte nada del análisis. Como mínimo:
 4. `db/apply.sh`: aplica migraciones pendientes en orden, registra cada una en `schema_migrations`, es idempotente y usa variables de entorno (`MIGRATOR_DATABASE_URL`; opcional `--seed`). Debe fallar de forma clara y no dejar la base a medias (cada migración en una transacción).
 5. `db/verify.sql` o `db/tests/*.sql`: **pruebas SQL** que verifiquen restricciones (`CHECK`, `UNIQUE`, FK), que las vistas devuelven lo esperado con los datos de ejemplo y que no existen columnas con arreglos o JSON para hechos multivaluados. Incluye consultas que reproducen lo que muestran las pantallas principales (Inicio, perfil de persona, rodadas grupales, reportes cercanos).
 6. `db/README.md` con el flujo: cómo aplicar, sembrar, verificar y revertir en desarrollo.
-7. `.env.example` (solo la parte de base de datos) sin secretos.
+7. `db/.env.example` (solo la parte de base de datos) sin secretos.
 
 ## Proceso esperado
 
@@ -114,4 +115,4 @@ Revisa que no falte nada del análisis. Como mínimo:
 - [ ] `waylo_app` no tiene permisos de DDL ni toca objetos de otros proyectos.
 - [ ] `db/apply.sh` es idempotente y cada migración corre en transacción.
 - [ ] Los datos de ejemplo corresponden a los mocks y las pruebas SQL pasan.
-- [ ] La rama está subida y los comandos de la VM son exactos y en orden.
+- [ ] La rama `db-esquema` está subida, actualizada con `origin/main`, y los comandos de la VM son exactos y en orden.
