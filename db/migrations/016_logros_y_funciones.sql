@@ -144,9 +144,9 @@ AS $$
   FROM v_rodada_resumen r
   JOIN usuario u ON u.id = r.usuario_id
   LEFT JOIN municipio m ON m.clave = u.municipio_clave
-  JOIN privacidad_usuario p ON p.usuario_id = r.usuario_id
+  LEFT JOIN privacidad_usuario p ON p.usuario_id = r.usuario_id
   WHERE r.finalizada_en IS NOT NULL
-    AND p.visibilidad_rodadas = 'todos' AND p.perfil_visible
+    AND COALESCE(p.visibilidad_rodadas, 'amigos') = 'todos' AND COALESCE(p.perfil_visible, true)
     AND r.usuario_id <> p_espectador
     AND NOT EXISTS (SELECT 1 FROM usuario_bloqueado b
                     WHERE (b.usuario_id = p_espectador AND b.bloqueado_id = r.usuario_id)
