@@ -115,7 +115,7 @@ docs/                 Este documento, vm-setup.md, sesiones.md
 ## Base de datos
 
 - Base `waylo_db`, dueño `waylo_user` (migraciones), rol de la app `waylo_app` (solo lectura y escritura de datos, sin DDL).
-- PostGIS para trazas y puntos (`geography(Point, 4326)`, `geography(LineString, 4326)`).
+- PostGIS 3.5.3 (confirmado disponible en la VM con `dnf`, paquete `postgis` de AppStream para PostgreSQL 16) para trazas y puntos (`geography(Point, 4326)`, `geography(LineString, 4326)`).
 - Convención: ids `uuid`, fechas `timestamptz`, textos en español de México.
 - Esta base comparte instancia con `libreria_db`: nunca tocar objetos de otros proyectos.
 
@@ -126,5 +126,4 @@ docs/                 Este documento, vm-setup.md, sesiones.md
 3. En la VM: `git pull` en `main`, luego `deploy/deploy.sh` (y `db/apply.sh` cuando haya migraciones nuevas).
 
 ## Pendiente de decidir
-- Si PostGIS no se puede instalar en la VM, la sesión de base de datos usará `double precision` para lat/lng y se documentará el cambio.
 - Dominio definitivo (hoy `34-51-108-167.sslip.io`) e IP estática reservada en Google Cloud.

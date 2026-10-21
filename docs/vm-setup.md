@@ -16,19 +16,19 @@ sudo dnf install -y epel-release && sudo dnf config-manager --set-enabled crb
 dnf list available '*postgis*' '*postgresql-contrib*'
 ```
 
-Si aparece un paquete `postgis` compatible con PostgreSQL 16:
+En la VM de Waylo ya se confirmó: `postgis` 3.5.3 y `postgresql-contrib` 16.14 están en AppStream. Instala **solo** estos (no los `postgresql18-postgis`, son para otra versión de Postgres):
 
 ```bash
 sudo dnf install -y postgis postgresql-contrib
 ```
 
-Verifica (pide la contraseña de `postgres`):
+Verifica (pide la contraseña de `postgres`; debe listar `postgis` 3.5.3):
 
 ```bash
 psql -h 127.0.0.1 -U postgres -tAc "select name, default_version from pg_available_extensions where name like 'postgis%'"
 ```
 
-Si no hay paquete compatible, avisa antes de seguir: el esquema usará `double precision` en vez de PostGIS (ver `docs/arquitectura.md`).
+No hace falta reiniciar PostgreSQL: la extensión se activa por base de datos con `CREATE EXTENSION` en el paso siguiente.
 
 ## 2. Base de datos y roles de Waylo
 
