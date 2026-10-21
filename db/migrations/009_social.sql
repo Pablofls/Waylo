@@ -15,7 +15,7 @@ CREATE TABLE solicitud_amistad (
   CHECK (emisor_id <> receptor_id),
   CHECK ((respondida_en IS NULL) = (resultado IS NULL)),
   CHECK (respondida_en IS NULL OR respondida_en >= enviada_en),
-  CHECK (amistad_terminada_en IS NULL OR (resultado = 'aceptada' AND amistad_terminada_en >= respondida_en))
+  CHECK (amistad_terminada_en IS NULL OR (COALESCE(resultado, '') = 'aceptada' AND amistad_terminada_en >= respondida_en))
 );
 -- Un solo vínculo vigente por par no ordenado: solicitud pendiente o amistad aceptada y no terminada.
 -- Una solicitud rechazada, cancelada o una amistad terminada NO impide enviar una nueva.

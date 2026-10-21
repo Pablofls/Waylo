@@ -1,6 +1,6 @@
 -- Pruebas SQL de la base de Waylo. Requieren haber aplicado `./db/apply.sh --seed`.
 --
---   psql "$MIGRATOR_DATABASE_URL" -X -f db/verify.sql
+--   psql -X --dbname="$MIGRATOR_DATABASE_URL" -f db/verify.sql
 --
 -- Todo corre dentro de una transacción que termina en ROLLBACK: no deja datos. Cada prueba que modifica
 -- datos se revierte sola (subtransacción). Si alguna falla, psql se detiene con el mensaje

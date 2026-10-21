@@ -36,7 +36,7 @@ else
   suma() { shasum -a 256 "$1" | cut -d' ' -f1; }
 fi
 
-PSQL=(psql "$MIGRATOR_DATABASE_URL" -X -q -v ON_ERROR_STOP=1)
+PSQL=(psql -X -q -v ON_ERROR_STOP=1 --dbname="$MIGRATOR_DATABASE_URL")
 
 # Requisitos previos que NO crean las migraciones (los prepara docs/vm-setup.md).
 [ "$("${PSQL[@]}" -tA -c "SELECT count(*) FROM pg_extension WHERE extname = 'postgis'")" = "1" ] \
