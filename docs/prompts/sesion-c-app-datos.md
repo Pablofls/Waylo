@@ -18,7 +18,7 @@ Lee `docs/arquitectura.md`, `docs/base-de-datos.md`, `services/realtime/README.m
    - **Elimina el modo simulación**: el interruptor en Comenzar, `useRide` en modo simulado y las rutas de ejemplo usadas como trayectoria. La rodada usa solo `navigator.geolocation.watchPosition` (alta precisión, descartar precisión > 30 m, Wake Lock). En escritorio sin GPS o con permiso denegado muestra el aviso de `/permisos/ubicacion` y no inicia.
    - `POST /api/ws-token` que emite el JWT corto del contrato (`sub`, `role`, `allow`, `exp`) con `WS_JWT_SECRET`.
    - Cliente WebSocket que publica posiciones (`role=gps`) durante una rodada y, para la ubicación en vivo y el seguimiento, escucha (`role=map`). Reconexión automática y renovación del token.
-   - Al terminar la rodada, se guarda la rodada y sus puntos según el esquema.
+   - La rodada se **crea al iniciar** (API que devuelve `ride_id`), antes de transmitir; los puntos los guarda el servicio en tiempo real. Al terminar se marca la rodada como finalizada (no se guardan km ni minutos: se calculan).
 5. **Migración por áreas**, un commit por área: cuenta, rodadas, reportes, social (amigos, comentarios, reacciones), rodadas grupales y clubes, retos e insignias, notificaciones, lugares y rutas guardadas, Premium (el pago sigue siendo simulado: no integres cobros reales), ayuda.
 6. **Pruebas** de las rutas API (autenticación, permisos, validaciones) y de los puntos críticos. `npx tsc --noEmit` y `next build` sin errores.
 7. Actualiza `README.md` (cómo correr, variables de entorno) y quita la sección "Pendiente para fase 2" que ya no aplique.

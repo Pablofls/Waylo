@@ -85,6 +85,10 @@ Solo se envían posiciones de usuarios en `allow`. Ping cada 25 s.
 ### Persistencia
 El servicio guarda el estado actual en memoria y escribe el historial a la tabla `ride_points` en lotes (cada 5 s o 50 puntos). El esquema lo define la sesión de base de datos (`db/migrations`).
 
+Por normalización (4FN), `ride_points` guarda `ride_id`, `geog`, `speed`, `heading`, `accuracy` y `ts`, **sin `user_id`**: el dueño de la rodada se obtiene de la tabla de rodadas. Consecuencias:
+- La rodada se crea **antes** de transmitir (la app la crea con una API y obtiene su `ride_id`).
+- El servicio acepta un `position` solo si `ride_id` pertenece al usuario del token y la rodada está en curso (lo verifica en la base de datos y lo guarda en caché unos segundos).
+
 ## Variables de entorno
 
 | Variable | Quién | Ejemplo |

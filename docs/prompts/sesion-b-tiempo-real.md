@@ -12,12 +12,12 @@ Lee `docs/arquitectura.md` completo, en especial **Protocolo WebSocket** y **GPS
 - `GET /health`: responde `ok` y estado (conexiones, posiciones activas).
 - `GET /ws?role=gps|map&token=<JWT>`:
   - Verifica JWT HS256 con `WS_JWT_SECRET`; el `role` del token debe coincidir con el de la URL; cierra con 4401 si falla. Un token vencido cierra con 4401.
-  - `role=gps`: recibe `position` y `stop`. El `user_id` sale del token, nunca del mensaje.
+  - `role=gps`: recibe `position` y `stop`. El `user_id` sale del token, nunca del mensaje. Un `position` solo se acepta si su `ride_id` pertenece a ese usuario y la rodada está en curso (consulta a la base de datos con caché corta, detrás de la interfaz de almacenamiento); si no, responde `error` con código `ride_invalida`.
   - `role=map`: al conectar recibe `snapshot` con las posiciones activas de los usuarios en `allow`; después `update`, `offline` y `error`, según el contrato.
   - Ping cada 25 s; cierra conexiones muertas.
 - **Validación** según el contrato: rango geográfico del AMM, `accuracy` ≤ 30 m, `speed` 0 a 80 km/h, `heading` 0 a 359, máx. 2 mensajes por segundo por conexión, descartar saltos mayores a 100 km/h entre puntos consecutivos. Los mensajes inválidos responden `error` sin cerrar la conexión (salvo abuso reiterado).
 - Estado actual en memoria; expiración a los 60 s sin mensajes (`offline`).
-- **Persistencia** del historial a `ride_points` por lotes (cada 5 s o 50 puntos) con `psycopg` 3 y `DATABASE_URL` (rol `waylo_app`). Aísla la escritura detrás de una interfaz (`PositionStore`) para poder probar sin base de datos. Si la sesión A ya está en `main` (revisa `db/migrations`), implementa contra el esquema real; si no, deja la interfaz y una implementación pendiente, y dilo claramente.
+- **Persistencia** del historial a `ride_points` (`ride_id`, `geog`, `speed`, `heading`, `accuracy`, `ts`; **sin `user_id`**, por normalización) por lotes (cada 5 s o 50 puntos) con `psycopg` 3 y `DATABASE_URL` (rol `waylo_app`). Aísla la escritura detrás de una interfaz (`PositionStore`) para poder probar sin base de datos. Si la sesión A ya está en `main` (revisa `db/migrations`), implementa contra el esquema real; si no, deja la interfaz y una implementación pendiente, y dilo claramente.
 - Un solo proceso: el estado vive en memoria, así que ejecútalo con **un** worker (por ejemplo `gunicorn -w 1 -k gthread --threads 50`).
 - `requirements.txt` con versiones fijadas, `README.md`, `.env.example` (sin secretos) y `tools/make_token.py` para generar un JWT de prueba con un secreto local (herramienta de desarrollo para probar el protocolo, no un simulador de vehículos).
 
