@@ -1,6 +1,8 @@
 """Servicio en tiempo real de Waylo (Flask + Flask-Sock). Ejecutar con UN solo worker."""
+import atexit
 import logging
 import os
+import signal
 import threading
 import time
 
@@ -10,6 +12,7 @@ from flask_sock import Sock
 from simple_websocket import ConnectionClosed
 
 from hub import Client, Hub
+from rides import build_registry
 from store import BatchWriter, build_store
 
 log = logging.getLogger("waylo.realtime")
@@ -32,17 +35,37 @@ class WsConn:
         self.ws.close(code, reason)
 
 
-def create_app(secret=None, store=None, clock=time.monotonic, start_background=True):
+def _flush_on_term(writer):
+    """Vacía la cola al cerrar el proceso (SIGTERM del worker de gunicorn o salida normal)."""
+    atexit.register(writer.close)
+    if threading.current_thread() is not threading.main_thread():
+        return
+    previous = signal.getsignal(signal.SIGTERM)
+
+    def handler(signum, frame):
+        writer.close()
+        if callable(previous):
+            previous(signum, frame)
+        else:
+            raise SystemExit(0)
+
+    signal.signal(signal.SIGTERM, handler)
+
+
+def create_app(secret=None, store=None, registry=None, clock=time.monotonic, start_background=True):
     secret = secret or os.environ.get("WS_JWT_SECRET", "")
     app = Flask(__name__)
     app.config["SOCK_SERVER_OPTIONS"] = {"ping_interval": 25}
     sock = Sock(app)
     store = store or build_store(os.environ.get("DATABASE_URL"))
-    writer = BatchWriter(store, max_size=50, interval=5.0, clock=clock)
-    hub = Hub(writer, clock=clock)
+    registry = registry or build_registry(os.environ.get("DATABASE_URL"), clock=clock)
+    writer = BatchWriter(store, max_size=50, interval=5.0, start_thread=start_background)
+    hub = Hub(writer, registry, clock=clock)
     app.hub, app.writer = hub, writer
 
     if start_background:
+        _flush_on_term(writer)
+
         def loop():
             while True:
                 time.sleep(1)
@@ -54,7 +77,8 @@ def create_app(secret=None, store=None, clock=time.monotonic, start_background=T
 
     @app.get("/health")
     def health():
-        return jsonify(status="ok", **hub.stats())
+        return jsonify(status="ok", **hub.stats(), store=store.kind, pending=writer.pending,
+                       last_write_error=writer.last_error)
 
     def authenticate(role):
         token = request.args.get("token", "")
