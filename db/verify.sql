@@ -204,7 +204,8 @@ BEGIN
   PERFORM pg_temp.debe_fallar($q$INSERT INTO reporte (usuario_id, categoria_clave, geog) VALUES (pg_temp.id('usuario:u_001'), 'bache', ST_SetSRID(ST_MakePoint(-100.41, 40.0), 4326)::geography)$q$, '23514', 'reporte con latitud fuera del AMM');
   PERFORM pg_temp.debe_fallar($q$INSERT INTO reporte (usuario_id, categoria_clave, geog) VALUES (pg_temp.id('usuario:u_001'), 'ovni', ST_SetSRID(ST_MakePoint(-100.41, 25.65), 4326)::geography)$q$, '23503', 'categoría de reporte inexistente');
   PERFORM pg_temp.debe_fallar($q$INSERT INTO reporte_historial_estado (reporte_id, estado_clave) VALUES (pg_temp.id('reporte:r_1042'), 'en_revision')$q$, '23505', 'cada estado se registra una vez por reporte');
-  PERFORM pg_temp.debe_fallar($q$INSERT INTO reporte_confirmacion (reporte_id, usuario_id, resultado) VALUES (pg_temp.id('reporte:r_1042'), pg_temp.id('usuario:p_1'), 'sigue')$q$, '23505', 'una confirmación por persona y reporte');
+  -- Se repite una confirmación que ya existe (cualquiera de las sembradas para r_1042).
+  PERFORM pg_temp.debe_fallar($q$INSERT INTO reporte_confirmacion (reporte_id, usuario_id, resultado) SELECT reporte_id, usuario_id, 'sigue' FROM reporte_confirmacion WHERE reporte_id = pg_temp.id('reporte:r_1042') LIMIT 1$q$, '23505', 'una confirmación por persona y reporte');
   PERFORM pg_temp.debe_fallar($q$INSERT INTO reporte_confirmacion (reporte_id, usuario_id, resultado) VALUES (pg_temp.id('reporte:r_1042'), pg_temp.id('usuario:u_001'), 'quizás')$q$, '23514', 'resultado de confirmación: sigue o resuelto');
   PERFORM pg_temp.debe_fallar($q$INSERT INTO denuncia_contenido (denunciante_id, motivo_clave, reporte_id, usuario_denunciado_id)
                                   VALUES (pg_temp.id('usuario:u_001'), 'spam', pg_temp.id('reporte:c_501'), pg_temp.id('usuario:p_7'))$q$, '23514', 'una denuncia apunta a exactamente un objeto');
