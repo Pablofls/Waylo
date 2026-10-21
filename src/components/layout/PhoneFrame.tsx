@@ -1,3 +1,5 @@
+import { OfflineBanner } from "./OfflineBanner";
+
 /** En móvil ocupa toda la pantalla; en escritorio se centra como un teléfono. */
 export function PhoneFrame({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
@@ -5,6 +7,7 @@ export function PhoneFrame({ children, className = "" }: { children: React.React
       <div
         className={`relative mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-white md:h-[min(900px,calc(100dvh-3rem))] md:rounded-[32px] md:border md:border-line md:shadow-sm ${className}`}
       >
+        <OfflineBanner />
         {children}
       </div>
     </div>

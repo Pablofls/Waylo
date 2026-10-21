@@ -10,8 +10,8 @@ import { statusLabels } from "@/lib/report-categories";
 import type { Report, ReportStatus } from "@/types";
 
 export function MyReports({ reports: base }: { reports: Report[] }) {
-  const { completions } = useSocial();
-  const reports = base.map((r) => (completions[r.id] ? { ...r, pendingDetails: false } : r));
+  const { completions, cancelledReports } = useSocial();
+  const reports = base.filter((r) => !cancelledReports.includes(r.id)).map((r) => (completions[r.id] ? { ...r, pendingDetails: false } : r));
   const [filter, setFilter] = useState<ReportStatus | "todos">("todos");
   const shown = filter === "todos" ? reports : reports.filter((r) => r.status === filter);
   const options: { v: ReportStatus | "todos"; l: string }[] = [

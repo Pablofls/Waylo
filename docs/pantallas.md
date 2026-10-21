@@ -21,52 +21,39 @@ Prioridad: P0 imprescindible para un uso completo, P1 importante, P2 deseable.
 | Rodada | Detalle de rodada pasada | `/actividad/[id]` |
 | Reportes | Completar reporte y reporte de la comunidad (confirmar) | `/reportes/[id]/completar`, `/reportes-comunidad/[id]` |
 | Notificaciones | Centro de notificaciones | `/notificaciones` |
-| Sistema | Página no encontrada y error | `not-found.tsx`, `error.tsx` |
+| Sistema | Página no encontrada, error, sin conexión y esqueletos de carga | `not-found.tsx`, `error.tsx`, `/sin-conexion`, `loading.tsx` |
+| Cuenta | Verificar correo, cambiar contraseña, términos y privacidad | `/verificar`, `/configuracion/contrasena`, `/legal/[doc]` |
+| Permisos | Notificaciones | `/permisos/notificaciones` |
+| Mapa | Rutas guardadas, filtros del mapa, preferencias de ruta | `/rutas-guardadas`, `/mapa`, `/configuracion/rutas` |
+| Rodada | Compartir viaje, recalcular ruta, emergencia y alerta de caída; contactos de emergencia | `/rodada`, `/configuracion/emergencia` |
+| Reportes | Editar y cancelar un reporte propio | `/reportes/[id]` |
+| Social | Bloquear y reportar usuario, bloqueados; insignias | `/personas/[id]`, `/configuracion/bloqueados`, `/insignias` |
+| Notificaciones | Preferencias detalladas | `/configuracion/notificaciones` |
+| Premium | Pago, confirmación, suscripción y aviso de función bloqueada | `/premium/pago`, `/premium/confirmacion`, `/premium/suscripcion` |
+| Ayuda | Centro de ayuda, contacto y guía del Safety Score | `/ayuda`, `/ayuda/contacto`, `/ayuda/safety-score` |
 
 ## Pendientes
 
 ### Cuenta y acceso
 | Pantalla | Prioridad |
 |---|---|
-| Verificación de correo | P1 |
-| Cambiar contraseña | P1 |
-| Cerrar sesión con confirmación | P1 |
-| Eliminar cuenta | P1 |
-| Términos y aviso de privacidad | P1 |
 | Sesión vencida | P2 |
-
-### Onboarding y permisos
-| Pantalla | Prioridad |
-|---|---|
-| Permiso de notificaciones | P1 |
-| Tutorial del Safety Score y del mapa de riesgo | P1 |
 
 ### Mapa y rutas
 | Pantalla | Prioridad |
 |---|---|
-| Rutas guardadas y habituales | P1 |
 | Historial de búsquedas | P2 |
-| Compartir ruta y hora de llegada con un contacto | P1 |
-| Preferencias de ruta (evitar zonas, preferir ciclovía) | P1 |
-| Filtros del mapa (tipo y antigüedad de reportes) | P1 |
 | Detalle de una zona e historial de seguridad (Premium) | P2 |
 | Mapas sin conexión (Premium) | P2 |
-| Estado sin conexión | P1 |
 
 ### Rodada
 | Pantalla | Prioridad |
 |---|---|
-| Editar o borrar una rodada | P1 |
-| Compartir una rodada | P1 |
-| Recalcular ruta al desviarse | P1 |
-| Alerta de caída con cuenta regresiva y contactos de emergencia | P1 |
-| Contactos de emergencia: gestionar | P1 |
 | Compartir ubicación en vivo | P2 |
 
 ### Reportes
 | Pantalla | Prioridad |
 |---|---|
-| Editar o cancelar un reporte propio | P1 |
 | Reglas de reporte (qué sí y qué no) | P2 |
 | Reportar contenido inapropiado | P2 |
 
@@ -75,34 +62,15 @@ Prioridad: P0 imprescindible para un uso completo, P1 importante, P2 deseable.
 |---|---|
 | Reacciones y comentarios en actividad | P2 |
 | Retos y ranking mensual | P2 |
-| Catálogo y detalle de insignias | P1 |
 | Clubes: lista, detalle, unirse, crear | P2 |
-| Bloquear y reportar usuario | P1 |
-| Privacidad del perfil (quién ve mis rodadas) | P1 |
-
-### Notificaciones
-| Pantalla | Prioridad |
-|---|---|
-| Preferencias detalladas | P1 |
 
 ### Premium y pagos
 | Pantalla | Prioridad |
 |---|---|
-| Pago simulado y confirmación | P1 |
-| Administrar suscripción (cambiar o cancelar) | P1 |
 | Historial de pagos y recibos | P2 |
-| Aviso "Disponible en Premium" en funciones bloqueadas | P1 |
 
 ### Configuración y ayuda
 | Pantalla | Prioridad |
 |---|---|
-| Centro de ayuda y preguntas frecuentes | P1 |
-| Contacto y soporte | P1 |
 | Enviar comentarios | P2 |
 | Acerca de, versión y licencias | P2 |
-
-### Estados transversales
-| Pantalla | Prioridad |
-|---|---|
-| Sin conexión | P1 |
-| Esqueletos de carga por pantalla | P1 |

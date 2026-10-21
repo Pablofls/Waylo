@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronRight, Download, LocateFixed, LogOut, MapPin, Trash2, UserRound } from "lucide-react";
+import { Bell, BookOpen, ChevronRight, Download, FileText, History, KeyRound, LifeBuoy, LocateFixed, Lock, LogOut, MapPin, Route, ShieldAlert, ShieldOff, Trash2, UserRound, WifiOff } from "lucide-react";
 import { ScreenHeader } from "@/components/layout/ScreenHeader";
+import { PremiumGate } from "@/components/domain/PremiumGate";
 import { ConfirmSheet } from "@/components/domain/ConfirmSheet";
 import { Segmented } from "@/components/ui/Segmented";
 import { Toggle } from "@/components/ui/Toggle";
@@ -32,7 +33,8 @@ function LinkRow({ href, icon, label, detail }: { href: string; icon: React.Reac
 
 export default function ConfiguracionPage() {
   const router = useRouter();
-  const { me } = useSocial();
+  const { me, subscription } = useSocial();
+  const [gate, setGate] = useState<string | null>(null);
   const [units, setUnits] = useState<"km" | "mi">("km");
   const [visibility, setVisibility] = useState<"todos" | "amigos" | "yo">("amigos");
   const [profilePublic, setProfilePublic] = useState(true);
@@ -46,7 +48,24 @@ export default function ConfiguracionPage() {
       <div className="flex-1 overflow-y-auto bg-white pb-6">
         <Section title="Cuenta">
           <LinkRow href="/perfil/editar" icon={<UserRound size={20} />} label="Editar perfil" detail={me.name.split(" ")[0]} />
+          <LinkRow href="/configuracion/contrasena" icon={<KeyRound size={20} />} label="Cambiar contraseña" />
           <LinkRow href="/lugares" icon={<MapPin size={20} />} label="Lugares guardados" />
+          <LinkRow href="/rutas-guardadas" icon={<Route size={20} />} label="Rutas guardadas" />
+        </Section>
+
+        <Section title="Rutas y avisos">
+          <LinkRow href="/configuracion/rutas" icon={<Route size={20} />} label="Preferencias de ruta" />
+          <LinkRow href="/configuracion/notificaciones" icon={<Bell size={20} />} label="Notificaciones" />
+          <LinkRow href="/configuracion/emergencia" icon={<ShieldAlert size={20} />} label="Emergencia y caídas" />
+        </Section>
+
+        <Section title="Premium">
+          {[{ k: "Los mapas sin conexión", l: "Mapas sin conexión", i: <WifiOff size={20} /> }, { k: "El historial de seguridad por zona", l: "Historial de seguridad por zona", i: <History size={20} /> }].map((f) => (
+            <button key={f.k} onClick={() => (subscription.active ? undefined : setGate(f.k))} className="flex min-h-[56px] w-full items-center gap-3 px-4 text-left">
+              <span className="text-muted">{f.i}</span><span className="flex-1 text-[15px] font-semibold">{f.l}</span>
+              {subscription.active ? <span className="text-sm text-brand-700">Incluido</span> : <Lock size={18} className="text-muted" />}
+            </button>
+          ))}
         </Section>
 
         <section className="px-4 pt-6">
@@ -69,6 +88,14 @@ export default function ConfiguracionPage() {
             <Toggle label="Reportes anónimos" checked={anonymousReports} onChange={setAnonymousReports} />
           </div>
           <LinkRow href="/permisos/ubicacion" icon={<LocateFixed size={20} />} label="Permiso de ubicación" />
+          <LinkRow href="/configuracion/bloqueados" icon={<ShieldOff size={20} />} label="Usuarios bloqueados" />
+        </Section>
+
+        <Section title="Ayuda y legal">
+          <LinkRow href="/ayuda" icon={<BookOpen size={20} />} label="Centro de ayuda" />
+          <LinkRow href="/ayuda/contacto" icon={<LifeBuoy size={20} />} label="Contacto y soporte" />
+          <LinkRow href="/legal/terminos" icon={<FileText size={20} />} label="Términos y condiciones" />
+          <LinkRow href="/legal/privacidad" icon={<FileText size={20} />} label="Aviso de privacidad" />
         </Section>
 
         <Section title="Tus datos">
@@ -87,6 +114,7 @@ export default function ConfiguracionPage() {
         </div>
       </div>
 
+      <PremiumGate open={gate !== null} feature={gate ?? ""} onClose={() => setGate(null)} />
       <ConfirmSheet open={confirm === "salir"} title="¿Cerrar sesión?" text="Podrás volver a entrar con tu correo y contraseña." confirmLabel="Cerrar sesión" onConfirm={() => router.push("/login")} onClose={() => setConfirm(null)} />
       <ConfirmSheet open={confirm === "eliminar"} danger title="¿Eliminar tu cuenta?" text="Se borrarán tus rodadas, reportes y amistades. Esta acción no se puede deshacer." confirmLabel="Eliminar cuenta" onConfirm={() => router.push("/")} onClose={() => setConfirm(null)} />
     </>

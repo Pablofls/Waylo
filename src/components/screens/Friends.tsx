@@ -25,7 +25,8 @@ const match = (p: Person, q: string) => `${p.name} ${p.city} ${p.email}`.toLower
 const detail = (p: Person) => `${p.city} · ${p.mutual} en común`;
 
 export function Friends() {
-  const { people, friends, received, sent } = useSocial();
+  const { people: allPeople, friends, received, sent, blocked } = useSocial();
+  const people = allPeople.filter((p) => !blocked.includes(p.id));
   const [tab, setTab] = useState<Tab>("amigos");
   const [qFriends, setQFriends] = useState("");
   const [qAll, setQAll] = useState("");

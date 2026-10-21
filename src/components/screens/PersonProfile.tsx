@@ -1,7 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { CalendarDays, ChevronRight, Lock, MapPin, UserX, Users } from "lucide-react";
+import { CalendarDays, ChevronRight, Flag, Lock, MapPin, MoreVertical, ShieldOff, UserX, Users } from "lucide-react";
+import { ConfirmSheet } from "@/components/domain/ConfirmSheet";
+import { Chip } from "@/components/ui/Chip";
+import { Button } from "@/components/ui/Button";
 import { ScreenHeader } from "@/components/layout/ScreenHeader";
 import { Avatar } from "@/components/domain/Avatar";
 import { StatBlock } from "@/components/domain/StatBlock";
@@ -17,8 +21,13 @@ import type { BadgeInfo, FriendActivity } from "@/types";
 const vehicleLabel = { bicicleta: "Bicicleta", scooter: "Scooter", ambos: "Bicicleta y scooter" } as const;
 
 export function PersonProfile({ id, activity, allBadges }: { id: string; activity: FriendActivity[]; allBadges: BadgeInfo[] }) {
-  const { person: find, rides } = useSocial();
+  const { person: find, rides, blocked, block, unblock } = useSocial();
   const person = find(id);
+  const [menu, setMenu] = useState(false);
+  const [confirmBlock, setConfirmBlock] = useState(false);
+  const [reporting, setReporting] = useState(false);
+  const [reason, setReason] = useState("");
+  const [reported, setReported] = useState(false);
 
   if (!person) {
     return (
@@ -29,6 +38,14 @@ export function PersonProfile({ id, activity, allBadges }: { id: string; activit
     );
   }
 
+  if (blocked.includes(person.id)) {
+    return (
+      <>
+        <ScreenHeader title={person.name} back="/amigos" />
+        <EmptyState icon={<ShieldOff size={26} />} title={`Bloqueaste a ${person.name.split(" ")[0]}`} text="No puede ver tu perfil ni tu actividad, y tú tampoco la suya." action={<Button onClick={() => unblock(person.id)}>Desbloquear</Button>} />
+      </>
+    );
+  }
   const isFriend = person.relation === "amigo";
   const badges = allBadges.filter((b) => person.badgeIds.includes(b.id)).map((b) => ({ ...b, earned: true, progress: b.goal }));
   const groupRides = rides.filter((r) => r.attendeeIds.includes(person.id) && r.status === "programada").slice(0, 3);
@@ -36,7 +53,7 @@ export function PersonProfile({ id, activity, allBadges }: { id: string; activit
 
   return (
     <>
-      <ScreenHeader title={person.name} back="/amigos" />
+      <ScreenHeader title={person.name} back="/amigos" action={<button aria-label="Más opciones" onClick={() => setMenu(true)} className="flex h-11 w-11 items-center justify-center rounded-full active:bg-canvas"><MoreVertical size={22} /></button>} />
       <div className="flex-1 overflow-y-auto bg-white">
         <section className="px-4 pb-5 pt-2">
           <div className="flex items-center gap-4">
@@ -105,6 +122,37 @@ export function PersonProfile({ id, activity, allBadges }: { id: string; activit
           )}
         </section>
       </div>
+      {menu && (
+        <div className="absolute inset-0 z-50 flex flex-col justify-end">
+          <button aria-label="Cerrar" className="absolute inset-0 bg-ink/50" onClick={() => setMenu(false)} />
+          <div role="dialog" aria-modal="true" aria-label="Opciones" className="pb-safe relative rounded-t-3xl bg-white p-3">
+            <button onClick={() => { setMenu(false); setReporting(true); }} className="flex min-h-[56px] w-full items-center gap-3 px-3 text-left font-semibold"><Flag size={20} />Reportar usuario</button>
+            <button onClick={() => { setMenu(false); setConfirmBlock(true); }} className="flex min-h-[56px] w-full items-center gap-3 px-3 text-left font-semibold text-[#B02E2E]"><ShieldOff size={20} />Bloquear</button>
+          </div>
+        </div>
+      )}
+      {reporting && (
+        <div className="absolute inset-0 z-50 flex flex-col justify-end">
+          <button aria-label="Cerrar" className="absolute inset-0 bg-ink/50" onClick={() => setReporting(false)} />
+          <div role="dialog" aria-modal="true" aria-label="Reportar usuario" className="pb-safe relative rounded-t-3xl bg-white p-5">
+            {reported ? (
+              <>
+                <h2 className="text-xl font-bold">Gracias por avisarnos</h2>
+                <p className="mt-1 text-sm text-muted">Revisaremos el perfil de {person.name.split(" ")[0]}. Si quieres, también puedes bloquearle.</p>
+                <Button full className="mt-4" onClick={() => { setReporting(false); setReported(false); setReason(""); }}>Listo</Button>
+              </>
+            ) : (
+              <>
+                <h2 className="text-xl font-bold">Reportar a {person.name.split(" ")[0]}</h2>
+                <p className="mt-1 text-sm text-muted">¿Qué pasa con este perfil?</p>
+                <div className="mt-3 flex flex-wrap gap-2">{["Es spam", "Es ofensivo", "Suplanta a alguien", "Reportes falsos", "Otro"].map((r) => <Chip key={r} selected={reason === r} onClick={() => setReason(r)}>{r}</Chip>)}</div>
+                <div className="mt-4 grid grid-cols-2 gap-3"><Button variant="outline" onClick={() => setReporting(false)}>Cancelar</Button><Button disabled={!reason} onClick={() => setReported(true)}>Enviar</Button></div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      <ConfirmSheet open={confirmBlock} danger title={`¿Bloquear a ${person.name.split(" ")[0]}?`} text="No podrá ver tu perfil ni tu actividad, y dejarán de ser amigos. Puedes desbloquearle en Configuración." confirmLabel="Bloquear" onConfirm={() => block(person.id)} onClose={() => setConfirmBlock(false)} />
     </>
   );
 }

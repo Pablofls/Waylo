@@ -10,6 +10,8 @@ const groups = [
       { n: "2", t: "Inicio de sesión", href: "/login" },
       { n: "3", t: "Registro y onboarding (5 pasos)", href: "/registro" },
       { n: "3b", t: "Recuperar contraseña", href: "/recuperar" },
+      { n: "3d", t: "Verificar correo", href: "/verificar" },
+      { n: "3e", t: "Permiso de notificaciones", href: "/permisos/notificaciones" },
       { n: "3c", t: "Ubicación desactivada: cómo activarla", href: "/permisos/ubicacion" },
     ],
   },
@@ -27,6 +29,8 @@ const groups = [
     items: [
       { n: "5", t: "Mapa: riesgo, destino y 3 opciones de ruta", href: "/mapa" },
       { n: "5a", t: "Lugares guardados", href: "/lugares" },
+      { n: "5d", t: "Rutas guardadas", href: "/rutas-guardadas" },
+      { n: "5e", t: "Cómo se calcula el Safety Score", href: "/ayuda/safety-score" },
       { n: "5b", t: "Desglose del Safety Score: Más segura", href: "/rutas/segura" },
       { n: "5c", t: "Desglose del Safety Score: Más rápida", href: "/rutas/rapida" },
     ],
@@ -57,10 +61,29 @@ const groups = [
       { n: "11b", t: "Editar perfil", href: "/perfil/editar" },
       { n: "11c", t: "Configuración y privacidad", href: "/configuracion" },
       { n: "11d", t: "Notificaciones", href: "/notificaciones" },
+      { n: "11e", t: "Preferencias de notificaciones", href: "/configuracion/notificaciones" },
+      { n: "11f", t: "Preferencias de ruta", href: "/configuracion/rutas" },
+      { n: "11g", t: "Emergencia: contactos y caídas", href: "/configuracion/emergencia" },
+      { n: "11h", t: "Cambiar contraseña", href: "/configuracion/contrasena" },
+      { n: "11i", t: "Usuarios bloqueados", href: "/configuracion/bloqueados" },
+      { n: "11j", t: "Insignias", href: "/insignias" },
+      { n: "11k", t: "Detalle de una insignia", href: "/insignias/b_3" },
       { n: "12", t: "Waylo Premium", href: "/premium" },
+      { n: "12b", t: "Pago de Premium (simulado)", href: "/premium/pago" },
+      { n: "12c", t: "Confirmación de Premium", href: "/premium/confirmacion" },
+      { n: "12d", t: "Administrar suscripción", href: "/premium/suscripcion" },
     ],
   },
-  { title: "Sistema", items: [{ n: "·", t: "Guía de estilo", href: "/design" }, { n: "·", t: "Página no encontrada", href: "/esta-pagina-no-existe" }] },
+  {
+    title: "Ayuda y legal",
+    items: [
+      { n: "13", t: "Centro de ayuda y preguntas frecuentes", href: "/ayuda" },
+      { n: "13b", t: "Contacto y soporte", href: "/ayuda/contacto" },
+      { n: "13c", t: "Términos y condiciones", href: "/legal/terminos" },
+      { n: "13d", t: "Aviso de privacidad", href: "/legal/privacidad" },
+    ],
+  },
+  { title: "Sistema", items: [{ n: "·", t: "Sin conexión", href: "/sin-conexion" },{ n: "·", t: "Guía de estilo", href: "/design" }, { n: "·", t: "Página no encontrada", href: "/esta-pagina-no-existe" }] },
 ];
 
 export default function Catalogo() {

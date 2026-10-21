@@ -82,14 +82,15 @@ export function Profile({ stats, badges, confirmedReports }: Props) {
 
       <section className="pt-6">
         <div className="flex items-center justify-between px-4">
-          <h2 className="text-lg font-bold">Reportes y insignias</h2>
+          <h2 className="text-lg font-bold">Reportes e insignias</h2>
+          <Link href="/insignias" className="flex min-h-[44px] items-center text-sm font-semibold text-brand-600">Ver todas</Link>
         </div>
         <Link href="/reportes" className="mx-4 mt-3 flex min-h-[64px] items-center gap-4 rounded-card border border-line px-4">
           <span className="metric text-4xl">{confirmedReports}</span>
           <span className="flex-1 text-sm"><span className="block font-semibold">Reportes confirmados</span><span className="block text-muted">Ver mis reportes y su estado</span></span>
           <ChevronRight size={20} className="text-muted" />
         </Link>
-        <div className="mt-4 flex gap-3 overflow-x-auto px-4 pb-1">{badges.map((b) => <BadgeMedal key={b.id} badge={b} />)}</div>
+        <div className="mt-4 flex gap-3 overflow-x-auto px-4 pb-1">{badges.map((b) => <Link key={b.id} href={`/insignias/${b.id}`}><BadgeMedal badge={b} /></Link>)}</div>
       </section>
 
       <section className="px-4 pt-8">

@@ -94,6 +94,7 @@ export interface BadgeInfo {
   progress: number;
   goal: number;
   earned: boolean;
+  howTo?: string;
 }
 
 export interface RiskPointProps {
@@ -191,4 +192,29 @@ export interface ReportCompletion {
   note: string;
   street: string;
   hasPhoto: boolean;
+}
+
+export interface SavedRoute {
+  id: string;
+  name: string;
+  fromName: string;
+  toName: string;
+  destination: LngLat;
+  routeId: RouteKind;
+  minutes: number;
+  safetyScore: number;
+}
+
+export interface EmergencyContact {
+  id: string;
+  name: string;
+  phone: string;
+  relation: string;
+}
+
+export interface Subscription {
+  active: boolean;
+  /** Fecha de fin cuando ya se canceló pero sigue vigente. */
+  until?: string;
+  cancelled?: boolean;
 }

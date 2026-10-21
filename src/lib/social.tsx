@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
-import type { AppNotification, GroupRide, Person, Relation, ReportCompletion, Ride, RideDraft, SavedPlace, User } from "@/types";
+import type { AppNotification, EmergencyContact, GroupRide, Person, Relation, ReportCompletion, Ride, RideDraft, SavedPlace, SavedRoute, Subscription, User } from "@/types";
 
 interface SessionCtx {
   me: User;
@@ -33,6 +33,22 @@ interface SessionCtx {
   completeReport: (id: string, c: ReportCompletion) => void;
   confirmations: Record<string, "sigue" | "resuelto">;
   confirmReport: (id: string, v: "sigue" | "resuelto") => void;
+  cancelledReports: string[];
+  cancelReport: (id: string) => void;
+  savedRoutes: SavedRoute[];
+  addSavedRoute: (r: SavedRoute) => void;
+  removeSavedRoute: (id: string) => void;
+  emergencyContacts: EmergencyContact[];
+  saveEmergencyContact: (c: EmergencyContact) => void;
+  removeEmergencyContact: (id: string) => void;
+  fallDetection: boolean;
+  setFallDetection: (v: boolean) => void;
+  blocked: string[];
+  block: (id: string) => void;
+  unblock: (id: string) => void;
+  subscription: Subscription;
+  subscribe: () => void;
+  cancelSubscription: () => void;
 }
 
 const Ctx = createContext<SessionCtx | null>(null);
@@ -50,6 +66,8 @@ interface Props {
   myRides: Ride[];
   savedPlaces: SavedPlace[];
   notifications: AppNotification[];
+  savedRoutes: SavedRoute[];
+  emergencyContacts: EmergencyContact[];
   children: React.ReactNode;
 }
 
@@ -57,7 +75,7 @@ interface Props {
  * Estado de sesión en el cliente (amigos, rodadas, lugares, notificaciones, reportes), sembrado con los mocks.
  * Los cambios viven solo hasta recargar; en fase 3 se reemplaza por la base de datos.
  */
-export function SocialProvider({ me: initialMe, people: initialPeople, rides: initialRides, myRides: initialMyRides, savedPlaces: initialPlaces, notifications: initialNotifs, children }: Props) {
+export function SocialProvider({ me: initialMe, people: initialPeople, rides: initialRides, myRides: initialMyRides, savedPlaces: initialPlaces, notifications: initialNotifs, savedRoutes: initialRoutes, emergencyContacts: initialContacts, children }: Props) {
   const [me, setMe] = useState(initialMe);
   const [people, setPeople] = useState(initialPeople);
   const [rides, setRides] = useState(initialRides);
@@ -66,6 +84,12 @@ export function SocialProvider({ me: initialMe, people: initialPeople, rides: in
   const [notifs, setNotifs] = useState(initialNotifs);
   const [completions, setCompletions] = useState<Record<string, ReportCompletion>>({});
   const [confirmations, setConfirmations] = useState<Record<string, "sigue" | "resuelto">>({});
+  const [cancelledReports, setCancelledReports] = useState<string[]>([]);
+  const [routes, setRoutes] = useState(initialRoutes);
+  const [contacts, setContacts] = useState(initialContacts);
+  const [fallDetection, setFallDetection] = useState(true);
+  const [blocked, setBlocked] = useState<string[]>([]);
+  const [subscription, setSubscription] = useState<Subscription>({ active: false });
 
   const setRelation = useCallback((id: string, relation: Relation) => setPeople((ps) => ps.map((p) => (p.id === id ? { ...p, relation } : p))), []);
   const patchRide = useCallback((id: string, fn: (r: GroupRide) => GroupRide) => setRides((rs) => rs.map((r) => (r.id === id ? fn(r) : r))), []);
@@ -105,8 +129,27 @@ export function SocialProvider({ me: initialMe, people: initialPeople, rides: in
       completeReport: (id, c) => setCompletions((x) => ({ ...x, [id]: c })),
       confirmations,
       confirmReport: (id, v) => setConfirmations((x) => ({ ...x, [id]: v })),
+      cancelledReports,
+      cancelReport: (id) => setCancelledReports((x) => (x.includes(id) ? x : [...x, id])),
+      savedRoutes: routes,
+      addSavedRoute: (r) => setRoutes((x) => [...x, r]),
+      removeSavedRoute: (id) => setRoutes((x) => x.filter((r) => r.id !== id)),
+      emergencyContacts: contacts,
+      saveEmergencyContact: (c) => setContacts((x) => (x.some((y) => y.id === c.id) ? x.map((y) => (y.id === c.id ? c : y)) : [...x, c])),
+      removeEmergencyContact: (id) => setContacts((x) => x.filter((c) => c.id !== id)),
+      fallDetection,
+      setFallDetection,
+      blocked,
+      block: (id) => {
+        setBlocked((x) => (x.includes(id) ? x : [...x, id]));
+        setRelation(id, "ninguna");
+      },
+      unblock: (id) => setBlocked((x) => x.filter((b) => b !== id)),
+      subscription,
+      subscribe: () => setSubscription({ active: true }),
+      cancelSubscription: () => setSubscription({ active: true, cancelled: true, until: "2026-11-20" }),
     }),
-    [me, people, rides, myRides, places, notifs, completions, confirmations, setRelation, patchRide],
+    [me, people, rides, myRides, places, notifs, completions, confirmations, cancelledReports, routes, contacts, fallDetection, blocked, subscription, setRelation, patchRide],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

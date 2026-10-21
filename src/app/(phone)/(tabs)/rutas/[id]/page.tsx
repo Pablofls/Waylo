@@ -29,7 +29,7 @@ export default async function RutaDetalle({ params }: { params: Promise<{ id: st
         </section>
         <section className="px-4 pt-4">
           <h2 className="text-lg font-bold">Por qué esta calificación</h2>
-          <p className="text-sm text-muted">Cada factor va de 0 a 100; mayor es mejor.</p>
+          <p className="text-sm text-muted">Cada factor va de 0 a 100; mayor es mejor. <a href="/ayuda/safety-score" className="font-semibold text-brand-600 underline">Cómo se calcula</a></p>
           <RiskBreakdown factors={route.factors} />
         </section>
         <div className="h-4" />

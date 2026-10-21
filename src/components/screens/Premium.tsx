@@ -1,5 +1,9 @@
-import { Check, Minus } from "lucide-react";
+"use client";
+
+import Link from "next/link";
+import { Check, ChevronRight, Minus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { useSocial } from "@/lib/social";
 
 const rows: { label: string; free: boolean; premium: boolean }[] = [
   { label: "Rutas con Safety Score", free: true, premium: true },
@@ -18,18 +22,24 @@ function Mark({ on }: { on: boolean }) {
 }
 
 export function Premium() {
+  const { subscription } = useSocial();
   return (
     <div className="flex-1 overflow-y-auto bg-white">
       <header className="pt-safe bg-brand-900 px-4 pb-6 text-white">
         <p className="pt-5 font-display text-lg font-semibold uppercase tracking-wide text-brand-100">Waylo Premium</p>
-        <h1 className="mt-1 max-w-[300px] text-3xl font-bold leading-tight">Más herramientas para llegar seguro</h1>
+        <h1 className="mt-1 max-w-[300px] text-3xl font-bold leading-tight">{subscription.active ? "Ya eres Premium" : "Más herramientas para llegar seguro"}</h1>
       </header>
+
+      {subscription.active && (
+        <Link href="/premium/suscripcion" className="mx-4 mt-4 flex min-h-[64px] items-center gap-3 rounded-card bg-brand-100 px-4 text-brand-700">
+          <span className="flex-1"><span className="block font-bold">{subscription.cancelled ? "Suscripción cancelada" : "Suscripción activa"}</span><span className="block text-sm">{subscription.cancelled ? "Conservas Premium hasta el 20 de noviembre" : "Administrar mi suscripción"}</span></span>
+          <ChevronRight size={20} />
+        </Link>
+      )}
 
       <section className="px-4 pt-5">
         <div className="grid grid-cols-[1fr_64px_72px] items-end pb-2 text-xs font-bold uppercase tracking-wide text-muted">
-          <span />
-          <span className="text-center">Gratis</span>
-          <span className="text-center text-brand-600">Premium</span>
+          <span /><span className="text-center">Gratis</span><span className="text-center text-brand-600">Premium</span>
         </div>
         <ul className="border-t border-line">
           {rows.map((r) => (
@@ -42,20 +52,17 @@ export function Premium() {
         </ul>
       </section>
 
-      <section className="space-y-3 px-4 py-6">
-        <div className="flex min-h-[76px] items-center justify-between rounded-card border-2 border-brand-600 bg-brand-100 px-4">
-          <span>
-            <span className="block font-bold">Mensual</span>
-            <span className="block text-sm text-muted">Cancela cuando quieras</span>
-          </span>
-          <span className="text-right">
-            <span className="metric text-4xl">$79</span>
-            <span className="block text-xs text-muted">MXN al mes</span>
-          </span>
-        </div>
-        <Button full size="lg">Continuar con Premium</Button>
-        <p className="text-center text-xs text-muted">Pago simulado en esta versión. No se realiza ningún cargo.</p>
-      </section>
+      {!subscription.active && (
+        <section className="space-y-3 px-4 py-6">
+          <div className="flex min-h-[76px] items-center justify-between rounded-card border-2 border-brand-600 bg-brand-100 px-4">
+            <span><span className="block font-bold">Mensual</span><span className="block text-sm text-muted">Cancela cuando quieras</span></span>
+            <span className="text-right"><span className="metric text-4xl">$79</span><span className="block text-xs text-muted">MXN al mes</span></span>
+          </div>
+          <Button href="/premium/pago" full size="lg">Continuar con Premium</Button>
+          <p className="text-center text-xs text-muted">Pago simulado en esta versión. No se realiza ningún cargo.</p>
+        </section>
+      )}
+      <div className="h-6" />
     </div>
   );
 }

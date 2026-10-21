@@ -3,15 +3,19 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Bike, Scooter, Compass, CornerUpLeft, CornerUpRight, ArrowUp, Flag, Mic, Pause, Play, Square, MapPinned, X, Siren, Check } from "lucide-react";
+import { Bike, Scooter, Share2, ShieldAlert, Route as RouteIcon, Compass, CornerUpLeft, CornerUpRight, ArrowUp, Flag, Mic, Pause, Play, Square, MapPinned, X, Siren, Check } from "lucide-react";
 import { MapView } from "@/components/map/MapView";
 import { RouteLine } from "@/components/map/RouteLine";
 import { UserMarker } from "@/components/map/UserMarker";
 import { StatBlock } from "@/components/domain/StatBlock";
 import { AlertBanner } from "@/components/domain/AlertBanner";
+import { EmergencySheet } from "@/components/domain/EmergencySheet";
+import { FallAlert } from "@/components/domain/FallAlert";
+import { ShareTripSheet } from "@/components/domain/ShareTripSheet";
 import { ReportSheet } from "@/components/domain/ReportSheet";
 import { Button } from "@/components/ui/Button";
 import { Toggle } from "@/components/ui/Toggle";
+import { useSocial } from "@/lib/social";
 import { riskAt } from "@/lib/map/risk";
 import { useRide } from "@/lib/geo/useRide";
 import { useWakeLock } from "@/lib/geo/useWakeLock";
@@ -42,6 +46,15 @@ export function LiveRide({ route, steps, alerts, risk, guided }: Props) {
   const [dismissed, setDismissed] = useState<string | null>(null);
   const [vehicle, setVehicle] = useState<"bicicleta" | "scooter">("bicicleta");
 
+  const { emergencyContacts } = useSocial();
+  const [shareOpen, setShareOpen] = useState(false);
+  const [sharingWith, setSharingWith] = useState<string[]>([]);
+  const [sosOpen, setSosOpen] = useState(false);
+  const [alerted, setAlerted] = useState(false);
+  const [fall, setFall] = useState(false);
+  const [reroute, setReroute] = useState<"idle" | "working" | "done">("idle");
+  const [rerouteToast, setRerouteToast] = useState(false);
+
   const active = phase === "active";
   const ride = useRide({ active, paused, simulate, simulationRoute: route.coordinates });
   useWakeLock(active);
@@ -54,6 +67,15 @@ export function LiveRide({ route, steps, alerts, risk, guided }: Props) {
     : nearRisk > 0.55
       ? { title: "Zona de riesgo alto", text: "Hay varios reportes cerca. Baja la velocidad y circula con precaución.", tone: "red" as const }
       : undefined;
+  const offRoute = guided && active && reroute === "idle" && progress >= 0.5 && progress < 0.62;
+  const recalc = () => {
+    setReroute("working");
+    setTimeout(() => {
+      setReroute("done");
+      setRerouteToast(true);
+      setTimeout(() => setRerouteToast(false), 4000);
+    }, 1500);
+  };
   const distToNext = Math.max(0, Math.round(((nextStep.at - progress) * route.km * 1000) / 10) * 10);
   const Turn = turnIcon[nextStep.turn];
 
@@ -93,7 +115,17 @@ export function LiveRide({ route, steps, alerts, risk, guided }: Props) {
                 </div>
               </div>
             )}
-            {alert && dismissed !== alert.title && (
+            {offRoute && (
+              <div role="alert" className="pointer-events-auto flex items-center gap-3 rounded-xl bg-white px-4 py-3 text-ink">
+                <RouteIcon size={26} className="shrink-0 text-risk-orange" />
+                <div className="min-w-0 flex-1"><p className="font-bold leading-tight">Te desviaste de la ruta</p><p className="text-sm text-muted">Calculamos otra manera de llegar.</p></div>
+                <Button className="!min-h-[44px] !px-4 text-sm" onClick={recalc}>Recalcular</Button>
+              </div>
+            )}
+            {reroute === "working" && <p role="status" className="pointer-events-auto rounded-xl bg-white px-4 py-3 text-sm font-semibold">Recalculando la ruta...</p>}
+            {rerouteToast && <p role="status" className="pointer-events-auto flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white"><Check size={18} />Ruta recalculada: llegas 1 min más tarde.</p>}
+            {sharingWith.length > 0 && <p className="pointer-events-auto flex items-center gap-2 rounded-xl bg-brand-100 px-4 py-2 text-sm font-semibold text-brand-700"><Share2 size={16} />Compartiendo con {sharingWith.join(", ")}</p>}
+            {alert && !offRoute && dismissed !== alert.title && (
               <button className="pointer-events-auto block w-full text-left" onClick={() => setDismissed(alert.title)} aria-label="Cerrar aviso">
                 <AlertBanner tone={alert.tone} title={alert.title} text={alert.text} />
               </button>
@@ -106,6 +138,14 @@ export function LiveRide({ route, steps, alerts, risk, guided }: Props) {
           </div>
         )}
       </div>
+
+      {/* Compartir y emergencia */}
+      {active && (
+        <div className="absolute left-3 flex flex-col gap-3" style={{ top: "42%" }}>
+          <button aria-label="Compartir mi viaje" onClick={() => setShareOpen(true)} className={`flex h-14 w-14 items-center justify-center rounded-full border ${sharingWith.length ? "border-brand-600 bg-brand-100 text-brand-700" : "border-line bg-white text-ink"}`}><Share2 size={22} /></button>
+          <button aria-label="Emergencia" onClick={() => setSosOpen(true)} className="flex h-14 w-14 items-center justify-center rounded-full border border-line bg-white text-risk-red"><ShieldAlert size={24} /></button>
+        </div>
+      )}
 
       {/* Botones flotantes de reporte */}
       {active && (
@@ -189,6 +229,9 @@ export function LiveRide({ route, steps, alerts, risk, guided }: Props) {
         </div>
       )}
 
+      <ShareTripSheet open={shareOpen} sharingWith={sharingWith} etaLabel={guided ? `${Math.max(1, Math.round(route.minutes * (1 - progress)))} min` : "sin destino"} onStart={setSharingWith} onStop={() => setSharingWith([])} onClose={() => setShareOpen(false)} />
+      <EmergencySheet open={sosOpen} alerted={alerted} onAlert={() => setAlerted(true)} onSimulateFall={() => { setSosOpen(false); setFall(true); }} onClose={() => setSosOpen(false)} />
+      {fall && <FallAlert contactNames={emergencyContacts.map((c) => c.name.split(" ")[0])} onOk={() => setFall(false)} />}
       <ReportSheet open={sheet} onClose={() => setSheet(false)} onSaved={() => setReportCount((n) => n + 1)} locationLabel="Av. Morones Prieto, San Pedro" />
     </div>
   );

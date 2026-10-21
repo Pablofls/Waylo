@@ -38,7 +38,7 @@ export default function RegistroPage() {
   const [pref, setPref] = useState(70);
   const [extra, setExtra] = useState(10);
 
-  const finish = () => router.push("/inicio");
+  const finish = () => router.push("/verificar");
   const next = () => (step < TOTAL ? setStep(step + 1) : finish());
   const prefText = pref < 34 ? "Prioriza llegar rápido, aunque pases por calles con más riesgo." : pref < 67 ? "Equilibra tiempo y seguridad en cada trayecto." : "Prioriza ciclovías y calles tranquilas, aunque tardes más.";
 
@@ -56,6 +56,7 @@ export default function RegistroPage() {
             <Input label="Nombre completo" autoComplete="name" defaultValue="Daniela Garza" />
             <Input label="Correo electrónico" type="email" autoComplete="email" defaultValue="daniela.garza@correo.com" />
             <Input label="Contraseña" type="password" autoComplete="new-password" defaultValue="waylo2026" hint="Mínimo 8 caracteres." />
+            <p className="text-xs text-muted">Al continuar aceptas los <a href="/legal/terminos" className="font-semibold text-brand-600 underline">términos</a> y el <a href="/legal/privacidad" className="font-semibold text-brand-600 underline">aviso de privacidad</a>.</p>
           </div>
         )}
 
