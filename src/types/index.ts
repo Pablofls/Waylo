@@ -17,6 +17,7 @@ export interface User {
   maxExtraMinutes: number;
   notifications: { alertas: boolean; municipio: boolean; rodadas: boolean };
   memberSince: string;
+  bio?: string;
 }
 
 export type RiskKey = "trafico" | "robo" | "iluminacion" | "pavimento" | "ciclovia";
@@ -165,3 +166,29 @@ export interface GroupRide {
 }
 
 export type RideDraft = Omit<GroupRide, "id" | "organizerId" | "attendeeIds" | "status">;
+
+export interface SavedPlace {
+  id: string;
+  label: string;
+  kind: "casa" | "escuela" | "trabajo" | "favorito";
+  place: Place;
+}
+
+export type NotificationKind = "alerta" | "reporte" | "amistad" | "rodada";
+
+export interface AppNotification {
+  id: string;
+  kind: NotificationKind;
+  title: string;
+  text: string;
+  at: string;
+  href: string;
+  read: boolean;
+}
+
+export interface ReportCompletion {
+  severity: "leve" | "moderada" | "grave";
+  note: string;
+  street: string;
+  hasPhoto: boolean;
+}

@@ -98,7 +98,7 @@ export function LiveRide({ route, steps, alerts, risk, guided }: Props) {
                 <AlertBanner tone={alert.tone} title={alert.title} text={alert.text} />
               </button>
             )}
-            {ride.error && <p role="alert" className="pointer-events-auto rounded-xl bg-white px-4 py-3 text-sm font-semibold text-risk-red">{ride.error}</p>}
+            {ride.error && <p role="alert" className="pointer-events-auto rounded-xl bg-white px-4 py-3 text-sm font-semibold text-[#B02E2E]">{ride.error} <Link href="/permisos/ubicacion" className="underline">Cómo activarla</Link></p>}
           </>
         ) : (
           <div className="pointer-events-auto flex items-center justify-between">

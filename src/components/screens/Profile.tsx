@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Crown, LogOut, Users } from "lucide-react";
+import { ChevronRight, Crown, MapPin, Pencil, Settings, Users } from "lucide-react";
 import { StatBlock } from "@/components/domain/StatBlock";
 import { RideCard } from "@/components/domain/RideCard";
 import { BadgeMedal } from "@/components/domain/BadgeMedal";
@@ -13,9 +13,9 @@ import { useSocial } from "@/lib/social";
 import type { BadgeInfo, Ride, User, Vehicle } from "@/types";
 
 interface Props {
-  user: User;
+  user?: User;
   stats: { rides: number; km: number; minutes: number; avgSafetyScore: number };
-  rides: Ride[];
+  rides?: Ride[];
   badges: BadgeInfo[];
   confirmedReports: number;
 }
@@ -29,8 +29,8 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-export function Profile({ user, stats, rides, badges, confirmedReports }: Props) {
-  const { friends, received } = useSocial();
+export function Profile({ stats, badges, confirmedReports }: Props) {
+  const { friends, received, me: user, myRides: rides } = useSocial();
   const [vehicle, setVehicle] = useState<Vehicle>(user.vehicle);
   const [pref, setPref] = useState(user.routePreference);
   const [n, setN] = useState(user.notifications);
@@ -47,6 +47,12 @@ export function Profile({ user, stats, rides, badges, confirmedReports }: Props)
           </div>
         </div>
       </header>
+
+      <div className="grid grid-cols-3 gap-2 px-4 pt-4">
+        <Link href="/perfil/editar" className="flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-card border border-line text-xs font-semibold"><Pencil size={20} />Editar</Link>
+        <Link href="/lugares" className="flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-card border border-line text-xs font-semibold"><MapPin size={20} />Lugares</Link>
+        <Link href="/configuracion" className="flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-card border border-line text-xs font-semibold"><Settings size={20} />Ajustes</Link>
+      </div>
 
       <section className="px-4 py-5">
         <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Octubre</h2>
@@ -87,7 +93,7 @@ export function Profile({ user, stats, rides, badges, confirmedReports }: Props)
       </section>
 
       <section className="px-4 pt-8">
-        <h2 className="text-lg font-bold">Configuración</h2>
+        <h2 className="text-lg font-bold">Preferencias</h2>
         <div className="mt-2">
           <p className="pt-3 text-sm font-semibold text-muted">Vehículo</p>
           <div className="mt-2"><Segmented label="Vehículo" value={vehicle} onChange={setVehicle} options={[{ value: "bicicleta", label: "Bicicleta" }, { value: "scooter", label: "Scooter" }, { value: "ambos", label: "Ambos" }]} /></div>
@@ -99,7 +105,7 @@ export function Profile({ user, stats, rides, badges, confirmedReports }: Props)
           <Row label="Estado de mis reportes"><Toggle label="Estado de mis reportes" checked={n.municipio} onChange={(v) => setN({ ...n, municipio: v })} /></Row>
           <Row label="Rodadas grupales"><Toggle label="Rodadas grupales" checked={n.rodadas} onChange={(v) => setN({ ...n, rodadas: v })} /></Row>
         </div>
-        <Link href="/login" className="mt-4 flex min-h-[56px] items-center gap-3 font-semibold text-risk-red"><LogOut size={20} />Cerrar sesión</Link>
+        <Link href="/configuracion" className="mt-2 flex min-h-[56px] items-center gap-3 font-semibold text-brand-600"><Settings size={20} />Más ajustes y privacidad</Link>
         <div className="h-4" />
       </section>
     </div>

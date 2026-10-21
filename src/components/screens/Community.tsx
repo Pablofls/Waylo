@@ -54,7 +54,7 @@ export function Community({ reports }: { reports: Report[] }) {
 
       <div className="relative flex-1 overflow-y-auto bg-white">
         {tab === "reportes" ? (
-          reports.map((r) => <ReportListItem key={r.id} report={r} />)
+          reports.map((r) => <ReportListItem key={r.id} report={{ ...r }} href={`/reportes-comunidad/${r.id}`} />)
         ) : (
           <>
             <div className="flex gap-2 overflow-x-auto px-4 py-3">

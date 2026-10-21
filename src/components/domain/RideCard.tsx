@@ -1,10 +1,12 @@
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { SafetyScoreBadge } from "./SafetyScoreBadge";
 import { formatDateTime } from "@/lib/format";
 import type { Ride } from "@/types";
 
 export function RideCard({ ride }: { ride: Ride }) {
   return (
-    <div className="flex items-center gap-4 border-b border-line bg-white px-4 py-3.5">
+    <Link href={`/actividad/${ride.id}`} className="flex items-center gap-4 border-b border-line bg-white px-4 py-3.5 active:bg-canvas">
       <div className="min-w-0 flex-1">
         <p className="truncate text-[15px] font-semibold">{ride.title}</p>
         <p className="text-xs text-muted">{formatDateTime(ride.startedAt)}</p>
@@ -15,6 +17,7 @@ export function RideCard({ ride }: { ride: Ride }) {
         </p>
       </div>
       <SafetyScoreBadge score={ride.avgSafetyScore} />
-    </div>
+      <ChevronRight size={18} className="shrink-0 text-muted" />
+    </Link>
   );
 }

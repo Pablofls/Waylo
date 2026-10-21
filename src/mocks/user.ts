@@ -13,4 +13,5 @@ export const mockUser: User = {
   maxExtraMinutes: 10,
   notifications: { alertas: true, municipio: true, rodadas: false },
   memberSince: "2026-03-14",
+  bio: "Voy en bici a la UDEM todos los días. Me gusta rodar con luces y por calles tranquilas.",
 };

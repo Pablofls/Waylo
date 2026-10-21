@@ -2,15 +2,18 @@
 
 import { useMemo, useState } from "react";
 import type { FeatureCollection, Point } from "geojson";
-import { ArrowUpDown, ChevronDown, ChevronUp, Circle, Clock, Layers, ListChecks, MapPin, Play, X } from "lucide-react";
+import Link from "next/link";
+import { ArrowUpDown, Siren, ChevronDown, ChevronUp, Circle, Clock, Layers, ListChecks, MapPin, Play, X } from "lucide-react";
 import { MapView } from "@/components/map/MapView";
 import { HeatmapLayer } from "@/components/map/HeatmapLayer";
 import { ReportMarkers } from "@/components/map/ReportMarkers";
 import { RouteLine } from "@/components/map/RouteLine";
 import { UserMarker } from "@/components/map/UserMarker";
+import { ReportSheet } from "@/components/domain/ReportSheet";
 import { RouteOptionCard } from "@/components/domain/RouteOptionCard";
 import { SafetyScoreBadge } from "@/components/domain/SafetyScoreBadge";
 import { Button } from "@/components/ui/Button";
+import { useSocial } from "@/lib/social";
 import { useUserPosition } from "@/lib/geo/useUserPosition";
 import { categoryById } from "@/lib/report-categories";
 import { formatDateTime } from "@/lib/format";
@@ -39,6 +42,9 @@ export function MapPlanner({ risk, reports, routes, origin, places, maxExtraMinu
   const [picked, setPicked] = useState<RouteKind>("segura");
   const [expanded, setExpanded] = useState(true);
   const position = useUserPosition(origin.coordinates);
+  const { savedPlaces } = useSocial();
+  const [reporting, setReporting] = useState(false);
+  const frequent: Place[] = savedPlaces.length > 0 ? savedPlaces.map((sp) => ({ ...sp.place, name: sp.label })) : places.slice(0, 4);
 
   const ordered = (["rapida", "segura", "equilibrada"] as RouteKind[]).map((id) => routes.find((r) => r.id === id)!);
   const current = routes.find((r) => r.id === picked)!;
@@ -121,9 +127,12 @@ export function MapPlanner({ risk, reports, routes, origin, places, maxExtraMinu
                 <div className="flex justify-between text-[10px] text-muted"><span>Bajo</span><span>Alto</span></div>
               </div>
             ) : <span />}
+            <div className="flex gap-2">
+            <button onClick={() => setReporting(true)} aria-label="Reportar un problema aquí" className="flex h-11 items-center gap-2 rounded-xl bg-risk-red px-3 text-sm font-semibold text-white"><Siren size={18} />Reportar</button>
             <button onClick={() => setHeat(!heat)} aria-pressed={heat} className={`flex h-11 items-center gap-2 rounded-xl border px-3 text-sm font-semibold ${heat ? "border-brand-900 bg-brand-900 text-white" : "border-line bg-white text-ink"}`}>
               <Layers size={18} />Riesgo
             </button>
+            </div>
           </div>
         )}
       </div>
@@ -138,15 +147,16 @@ export function MapPlanner({ risk, reports, routes, origin, places, maxExtraMinu
                 <p className="font-bold">{categoryById(selectedReport.category).label}</p>
                 <p className="truncate text-sm text-muted">{selectedReport.street}</p>
                 <p className="mt-1 text-xs text-muted">{formatDateTime(selectedReport.createdAt)} · {selectedReport.confirmations} confirmaciones</p>
+                <Link href={selectedReport.id.startsWith("r_") ? `/reportes/${selectedReport.id}` : `/reportes-comunidad/${selectedReport.id}`} className="mt-1 inline-flex min-h-[44px] items-center text-sm font-semibold text-brand-600">Ver detalle</Link>
               </div>
               <button aria-label="Cerrar" onClick={() => setSelectedReport(null)} className="-m-2 flex h-11 w-11 items-center justify-center"><X size={20} /></button>
             </div>
           </div>
         ) : !dest ? (
           <div className="pt-2">
-            <p className="text-sm font-bold uppercase tracking-wide text-muted">Lugares frecuentes</p>
+            <div className="flex items-center justify-between"><p className="text-sm font-bold uppercase tracking-wide text-muted">Tus lugares</p><Link href="/lugares" className="flex min-h-[44px] items-center text-sm font-semibold text-brand-600">Editar</Link></div>
             <ul className="mt-2 divide-y divide-line rounded-card border border-line bg-white">
-              {places.slice(0, 4).map((p) => (
+              {frequent.map((p) => (
                 <li key={p.name}>
                   <button onClick={() => choose(p)} className="flex min-h-[56px] w-full items-center gap-3 px-4 text-left active:bg-canvas">
                     <MapPin size={18} className="shrink-0 text-brand-600" />
@@ -180,6 +190,7 @@ export function MapPlanner({ risk, reports, routes, origin, places, maxExtraMinu
           </>
         )}
       </div>
+      <ReportSheet open={reporting} onClose={() => setReporting(false)} locationLabel="Tu ubicación actual" />
     </div>
   );
 }

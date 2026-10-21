@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Play, TriangleAlert, UserPlus, Users } from "lucide-react";
+import { Bell, Play, TriangleAlert, UserPlus, Users } from "lucide-react";
 import { SafetyScoreBadge } from "@/components/domain/SafetyScoreBadge";
 import { RideCard } from "@/components/domain/RideCard";
 import { ActivityCard } from "@/components/domain/ActivityCard";
@@ -14,15 +14,15 @@ import type { CommunityRide, FriendActivity, Place, Ride, RouteOption, User } fr
 type Tab = "mias" | "comunidad" | "amigos";
 
 interface Props {
-  user: User;
+  user?: User;
   usual: { origin: Place; destination: Place; route: RouteOption; newAlerts: number };
-  rides: Ride[];
+  rides?: Ride[];
   communityRides: CommunityRide[];
   activity: FriendActivity[];
 }
 
-export function Home({ user, usual, rides, communityRides, activity }: Props) {
-  const { friends, received } = useSocial();
+export function Home({ usual, communityRides, activity }: Props) {
+  const { friends, received, me: user, myRides: rides, unreadCount } = useSocial();
   const [tab, setTab] = useState<Tab>("mias");
   const { route } = usual;
   const tabs: { v: Tab; l: string }[] = [
@@ -38,10 +38,16 @@ export function Home({ user, usual, rides, communityRides, activity }: Props) {
           <p className="text-sm text-muted">Buen día</p>
           <h1 className="text-2xl font-bold leading-tight">Hola, {user.name.split(" ")[0]}</h1>
         </div>
+        <div className="flex gap-2">
+        <Link href="/notificaciones" aria-label={`Notificaciones${unreadCount ? `, ${unreadCount} sin leer` : ""}`} className="relative flex h-12 w-12 items-center justify-center rounded-full border border-line active:bg-canvas">
+          <Bell size={22} />
+          {unreadCount > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-risk-red px-1 text-[11px] font-bold text-white">{unreadCount}</span>}
+        </Link>
         <Link href="/amigos" aria-label="Amigos" className="relative flex h-12 w-12 items-center justify-center rounded-full border border-line active:bg-canvas">
           <Users size={22} />
           {received.length > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-600 px-1 text-[11px] font-bold text-white">{received.length}</span>}
         </Link>
+        </div>
       </header>
 
       <section className="px-4 pt-2">
@@ -73,7 +79,7 @@ export function Home({ user, usual, rides, communityRides, activity }: Props) {
         ))}
       </div>
 
-      {tab === "mias" && rides.map((r) => <RideCard key={r.id} ride={r} />)}
+      {tab === "mias" && (rides.length === 0 ? <EmptyState title="Aún no tienes rodadas" text="Toca Comenzar para registrar tu primera rodada." action={<Button href="/rodada">Comenzar</Button>} /> : rides.map((r) => <RideCard key={r.id} ride={r} />))}
       {tab === "comunidad" &&
         communityRides.map((r) => <ActivityCard key={r.id} personId={r.personId} name={r.person} title={r.title} km={r.km} minutes={r.minutes} safetyScore={r.safetyScore} at={r.at} meta={r.zone} />)}
       {tab === "amigos" &&

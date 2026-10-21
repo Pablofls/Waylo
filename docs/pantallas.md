@@ -14,16 +14,21 @@ Prioridad: P0 imprescindible para un uso completo, P1 importante, P2 deseable.
 | Reportes | Reporte rápido, mis reportes y detalle | `/reportes`, `/reportes/[id]` |
 | Amigos | Lista, solicitudes, búsqueda y perfil de personas | `/amigos`, `/personas/[id]` |
 | Rodadas grupales | Lista con filtros, detalle, asistentes, crear y editar | `/comunidad`, `/rodadas/[id]`, `/rodadas/[id]/asistentes`, `/rodadas/nueva`, `/rodadas/[id]/editar` |
-| Cuenta | Perfil y Premium | `/perfil`, `/premium` |
+| Cuenta | Perfil, editar perfil, configuración y Premium | `/perfil`, `/perfil/editar`, `/configuracion`, `/premium` |
+| Cuenta | Recuperar contraseña | `/recuperar` |
+| Permisos | Ubicación desactivada | `/permisos/ubicacion` |
+| Mapa | Lugares guardados | `/lugares` |
+| Rodada | Detalle de rodada pasada | `/actividad/[id]` |
+| Reportes | Completar reporte y reporte de la comunidad (confirmar) | `/reportes/[id]/completar`, `/reportes-comunidad/[id]` |
+| Notificaciones | Centro de notificaciones | `/notificaciones` |
+| Sistema | Página no encontrada y error | `not-found.tsx`, `error.tsx` |
 
 ## Pendientes
 
 ### Cuenta y acceso
 | Pantalla | Prioridad |
 |---|---|
-| Recuperar contraseña (correo, código, nueva contraseña) | P0 |
 | Verificación de correo | P1 |
-| Editar perfil (foto, nombre, bio, ciudad) | P0 |
 | Cambiar contraseña | P1 |
 | Cerrar sesión con confirmación | P1 |
 | Eliminar cuenta | P1 |
@@ -34,13 +39,11 @@ Prioridad: P0 imprescindible para un uso completo, P1 importante, P2 deseable.
 | Pantalla | Prioridad |
 |---|---|
 | Permiso de notificaciones | P1 |
-| Ubicación denegada: cómo activarla | P0 |
 | Tutorial del Safety Score y del mapa de riesgo | P1 |
 
 ### Mapa y rutas
 | Pantalla | Prioridad |
 |---|---|
-| Lugares guardados (casa, escuela, favoritos): ver, agregar, editar | P0 |
 | Rutas guardadas y habituales | P1 |
 | Historial de búsquedas | P2 |
 | Compartir ruta y hora de llegada con un contacto | P1 |
@@ -53,7 +56,6 @@ Prioridad: P0 imprescindible para un uso completo, P1 importante, P2 deseable.
 ### Rodada
 | Pantalla | Prioridad |
 |---|---|
-| Detalle de una rodada pasada (mapa, métricas, Score por tramo) | P0 |
 | Editar o borrar una rodada | P1 |
 | Compartir una rodada | P1 |
 | Recalcular ruta al desviarse | P1 |
@@ -64,9 +66,6 @@ Prioridad: P0 imprescindible para un uso completo, P1 importante, P2 deseable.
 ### Reportes
 | Pantalla | Prioridad |
 |---|---|
-| Completar reporte (foto, descripción, severidad, ubicación) | P0 |
-| Reportar desde el mapa (fuera de una rodada) | P0 |
-| Detalle de un reporte de la comunidad con confirmar o "ya no está" | P0 |
 | Editar o cancelar un reporte propio | P1 |
 | Reglas de reporte (qué sí y qué no) | P2 |
 | Reportar contenido inapropiado | P2 |
@@ -74,7 +73,6 @@ Prioridad: P0 imprescindible para un uso completo, P1 importante, P2 deseable.
 ### Comunidad y social
 | Pantalla | Prioridad |
 |---|---|
-| Notificaciones de amistad y rodadas | P0 |
 | Reacciones y comentarios en actividad | P2 |
 | Retos y ranking mensual | P2 |
 | Catálogo y detalle de insignias | P1 |
@@ -85,7 +83,6 @@ Prioridad: P0 imprescindible para un uso completo, P1 importante, P2 deseable.
 ### Notificaciones
 | Pantalla | Prioridad |
 |---|---|
-| Centro de notificaciones (alertas, reportes, amigos, rodadas) | P0 |
 | Preferencias detalladas | P1 |
 
 ### Premium y pagos
@@ -99,7 +96,6 @@ Prioridad: P0 imprescindible para un uso completo, P1 importante, P2 deseable.
 ### Configuración y ayuda
 | Pantalla | Prioridad |
 |---|---|
-| Configuración general (unidades, tema, privacidad, datos) | P0 |
 | Centro de ayuda y preguntas frecuentes | P1 |
 | Contacto y soporte | P1 |
 | Enviar comentarios | P2 |
@@ -108,7 +104,5 @@ Prioridad: P0 imprescindible para un uso completo, P1 importante, P2 deseable.
 ### Estados transversales
 | Pantalla | Prioridad |
 |---|---|
-| Página no encontrada | P0 |
-| Error genérico | P0 |
 | Sin conexión | P1 |
 | Esqueletos de carga por pantalla | P1 |

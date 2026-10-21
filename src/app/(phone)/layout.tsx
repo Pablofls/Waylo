@@ -1,12 +1,12 @@
 import { PhoneFrame } from "@/components/layout/PhoneFrame";
 import { SocialProvider } from "@/lib/social";
-import { getUser, getPeople, getGroupRides } from "@/lib/data";
+import { getUser, getPeople, getGroupRides, getRides, getSavedPlaces, getNotifications } from "@/lib/data";
 
 export default async function PhoneLayout({ children }: { children: React.ReactNode }) {
-  const [me, people, rides] = await Promise.all([getUser(), getPeople(), getGroupRides()]);
+  const [me, people, rides, myRides, savedPlaces, notifications] = await Promise.all([getUser(), getPeople(), getGroupRides(), getRides(), getSavedPlaces(), getNotifications()]);
   return (
     <PhoneFrame>
-      <SocialProvider me={me} people={people} rides={rides}>
+      <SocialProvider me={me} people={people} rides={rides} myRides={myRides} savedPlaces={savedPlaces} notifications={notifications}>
         {children}
       </SocialProvider>
     </PhoneFrame>

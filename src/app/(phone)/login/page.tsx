@@ -55,7 +55,7 @@ export default function LoginPage() {
           </button>
         </div>
         <div className="text-right">
-          <Link href="/login" className="inline-flex min-h-[44px] items-center text-sm font-semibold text-brand-600">¿Olvidaste tu contraseña?</Link>
+          <Link href="/recuperar" className="inline-flex min-h-[44px] items-center text-sm font-semibold text-brand-600">¿Olvidaste tu contraseña?</Link>
         </div>
         <Button type="submit" size="lg" full>Continuar</Button>
       </form>

@@ -8,6 +8,8 @@ import { mockBadges, confirmedReports } from "@/mocks/badges";
 import { riskPoints } from "@/mocks/risk-points";
 import { people, friendActivity } from "@/mocks/people";
 import { navSteps, navAlerts } from "@/mocks/navigation";
+import { savedPlaces } from "@/mocks/saved-places";
+import { notifications } from "@/mocks/notifications";
 import { PLACES, HOME, UNIVERSITY, MONTERREY_CENTER } from "@/mocks/places";
 
 const wait = <T,>(v: T) => Promise.resolve(v);
@@ -33,3 +35,6 @@ export const getCommunityRides = () => wait(communityRides);
 export const getPeople = () => wait(people);
 export const getPerson = (id: string) => wait(people.find((p) => p.id === id) ?? null);
 export const getPersonActivity = (id: string) => wait(friendActivity.filter((a) => a.friendId === id));
+export const getSavedPlaces = () => wait(savedPlaces);
+export const getNotifications = () => wait(notifications);
+export const getAnyReport = (id: string) => wait([...mockReports, ...communityReports].find((r) => r.id === id) ?? null);

@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
-import { MapPin, Users, Pencil } from "lucide-react";
+import { MapPin, Users } from "lucide-react";
 import { ScreenHeader } from "@/components/layout/ScreenHeader";
 import { MapView } from "@/components/map/MapView";
 import { ReportMarkers } from "@/components/map/ReportMarkers";
+import { ReportDetailExtras } from "@/components/screens/ReportDetailExtras";
 import { ReportStatusTimeline } from "@/components/domain/ReportStatusTimeline";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
 import { getMyReport } from "@/lib/data";
 import { categoryById, statusLabels } from "@/lib/report-categories";
 import { formatDateTime } from "@/lib/format";
@@ -35,13 +35,7 @@ export default async function ReporteDetalle({ params }: { params: Promise<{ id:
             {report.note && <p className="mt-3 rounded-lg bg-canvas p-3 text-sm">{report.note}</p>}
             <p className="mt-3 flex items-center gap-2 text-sm text-muted"><Users size={16} />{report.confirmations} personas lo confirmaron</p>
           </div>
-          {report.pendingDetails && (
-            <div className="rounded-card border border-risk-orange bg-[#FCEBDD] p-4">
-              <p className="font-bold">Falta completar este reporte</p>
-              <p className="mt-0.5 text-sm text-muted">Agrega una foto y una descripción para que el municipio pueda atenderlo.</p>
-              <Button className="mt-3" icon={<Pencil size={18} />}>Completar ahora</Button>
-            </div>
-          )}
+          <ReportDetailExtras report={report} />
           <div>
             <h2 className="mb-4 text-lg font-bold">Seguimiento</h2>
             <ReportStatusTimeline report={report} />
