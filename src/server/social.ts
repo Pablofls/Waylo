@@ -66,6 +66,7 @@ export async function personasConocidas(uid: string): Promise<Person[]> {
        OR (${NO_BLOQUEADO} AND (
          u.id IN (SELECT a2.usuario_id FROM rodada_grupal_asistente a1 JOIN rodada_grupal_asistente a2 ON a2.rodada_grupal_id = a1.rodada_grupal_id WHERE a1.usuario_id = $1)
          OR u.id IN (SELECT g.organizador_id FROM rodada_grupal g WHERE g.privacidad = 'publica' OR g.id IN (SELECT rodada_grupal_id FROM rodada_grupal_asistente WHERE usuario_id = $1))
+         OR (p.perfil_visible AND u.id IN (SELECT a.usuario_id FROM rodada_grupal_asistente a JOIN rodada_grupal g ON g.id = a.rodada_grupal_id WHERE g.privacidad = 'publica' AND g.cancelada_en IS NULL AND g.programada_en > now() - interval '1 day'))
          OR u.id IN (SELECT m2.usuario_id FROM club_miembro m1 JOIN club_miembro m2 ON m2.club_id = m1.club_id WHERE m1.usuario_id = $1)
        ))
      )

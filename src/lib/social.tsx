@@ -31,8 +31,8 @@ interface SessionCtx {
   setRelation: (id: string, r: Relation, who?: Person) => void;
   join: (rideId: string) => void;
   leave: (rideId: string) => void;
-  createRide: (d: RideDraft, invited: string[]) => string;
-  updateRide: (id: string, d: RideDraft) => void;
+  createRide: (d: RideDraft, invited: string[], clubId?: string) => Promise<string>;
+  updateRide: (id: string, d: RideDraft) => Promise<void>;
   cancelRide: (id: string) => void;
   myRides: Ride[];
   renameMyRide: (id: string, title: string) => void;
@@ -83,7 +83,7 @@ interface SessionCtx {
   clubs: Club[];
   joinClub: (id: string) => void;
   leaveClub: (id: string) => void;
-  createClub: (d: { name: string; description: string; zone: string; privacy: Club["privacy"] }) => string;
+  createClub: (d: { name: string; description: string; municipality: string; privacy: Club["privacy"] }) => Promise<string>;
   joinedChallenges: string[];
   toggleChallenge: (id: string) => void;
 }
@@ -125,6 +125,11 @@ export interface Settings {
   rutas: RutasAjustes;
 }
 
+/** RideDraft (como la ve la interfaz) al cuerpo que espera la API. */
+function rideBody(d: RideDraft) {
+  return { titulo: d.title, descripcion: d.description, fecha: d.date, lugarSalidaId: d.meetingPlaceId, nivel: d.level, ritmo: d.pace, vehiculo: d.vehicle, km: d.km, cupo: d.capacity ?? null, privacidad: d.privacy, reglas: d.rules };
+}
+
 async function uploadPhoto(reportId: string, file: File) {
   const res = await fetch(`/api/reportes/${reportId}/foto`, { method: "PUT", body: file, credentials: "same-origin" });
   if (!res.ok) throw new Error(((await res.json().catch(() => ({}))) as { error?: string }).error ?? "No pudimos subir la foto.");
@@ -158,7 +163,7 @@ export function SocialProvider({ me: initialMe, people: initialPeople, rides: in
   const me = initialMe;
   const [people, setPeople] = useOptimistic<Person[], Updater<Person[]>>(initialPeople, (cur, fn) => fn(cur));
   const [settings, setSettings] = useOptimistic<Settings, Updater<Settings>>(initialSettings, (cur, fn) => fn(cur));
-  const [rides, setRides] = useState(initialRides);
+  const [rides, setRides] = useOptimistic<GroupRide[], Updater<GroupRide[]>>(initialRides, (cur, fn) => fn(cur));
   const [myRides, setMyRides] = useOptimistic<Ride[], Updater<Ride[]>>(initialMyRides, (cur, fn) => fn(cur));
   const [places, setPlaces] = useOptimistic<SavedPlace[], Updater<SavedPlace[]>>(initialPlaces, (cur, fn) => fn(cur));
   const [notifs, setNotifs] = useState(initialNotifs);
@@ -172,7 +177,7 @@ export function SocialProvider({ me: initialMe, people: initialPeople, rides: in
   const [offlineMaps, setOfflineMaps] = useState<string[]>([]);
   const [liveShare, setLiveShare] = useState<{ with: string[]; hours: number | null } | null>(null);
   const [kudos, setKudos] = useOptimistic<string[], Updater<string[]>>(initialKudos, (cur, fn) => fn(cur));
-  const [clubs, setClubs] = useState(initialClubs);
+  const [clubs, setClubs] = useOptimistic<Club[], Updater<Club[]>>(initialClubs, (cur, fn) => fn(cur));
   const [joinedChallenges, setJoinedChallenges] = useState<string[]>(["ch_1", "ch_2"]);
 
   const setRelation = useCallback(
@@ -186,7 +191,7 @@ export function SocialProvider({ me: initialMe, people: initialPeople, rides: in
     },
     [people, act, setPeople],
   );
-  const patchRide = useCallback((id: string, fn: (r: GroupRide) => GroupRide) => setRides((rs) => rs.map((r) => (r.id === id ? fn(r) : r))), []);
+  const patchRide = useCallback((id: string, fn: (r: GroupRide) => GroupRide) => setRides((rs) => rs.map((r) => (r.id === id ? fn(r) : r))), [setRides]);
 
   const value = useMemo<SessionCtx>(
     () => ({
@@ -211,15 +216,26 @@ export function SocialProvider({ me: initialMe, people: initialPeople, rides: in
       person: (id) => people.find((p) => p.id === id),
       ride: (id) => rides.find((r) => r.id === id),
       setRelation,
-      join: (rideId) => patchRide(rideId, (r) => (r.attendeeIds.includes(me.id) ? r : { ...r, attendeeIds: [...r.attendeeIds, me.id] })),
-      leave: (rideId) => patchRide(rideId, (r) => ({ ...r, attendeeIds: r.attendeeIds.filter((a) => a !== me.id) })),
-      createRide: (d, invited) => {
-        const id = `g_new_${Date.now()}`;
-        setRides((rs) => [{ ...d, id, organizerId: me.id, attendeeIds: [me.id, ...invited], status: "programada" }, ...rs]);
-        return id;
+      join: (rideId) =>
+        act(
+          () => patchRide(rideId, (r) => (r.attendeeIds.includes(me.id) ? r : { ...r, attendeeIds: [...r.attendeeIds, me.id], attendeeCount: r.attendeeCount + 1 })),
+          () => api(`/api/rodadas-grupales/${rideId}/asistencia`, "POST"),
+        ),
+      leave: (rideId) =>
+        act(
+          () => patchRide(rideId, (r) => ({ ...r, attendeeIds: r.attendeeIds.filter((a) => a !== me.id), attendeeCount: Math.max(0, r.attendeeCount - 1) })),
+          () => api(`/api/rodadas-grupales/${rideId}/asistencia`, "DELETE"),
+        ),
+      createRide: async (d, invited, clubId) => {
+        const r = await api<{ id: string }>("/api/rodadas-grupales", "POST", { ...rideBody(d), invitados: invited, clubId });
+        router.refresh();
+        return r.id;
       },
-      updateRide: (id, d) => patchRide(id, (r) => ({ ...r, ...d })),
-      cancelRide: (id) => patchRide(id, (r) => ({ ...r, status: "cancelada" })),
+      updateRide: async (id, d) => {
+        await api(`/api/rodadas-grupales/${id}`, "PUT", rideBody(d));
+        router.refresh();
+      },
+      cancelRide: (id) => act(() => patchRide(id, (r) => ({ ...r, status: "cancelada" })), () => api(`/api/rodadas-grupales/${id}`, "DELETE")),
       myRides,
       renameMyRide: (id, title) => act(() => setMyRides((rs) => rs.map((r) => (r.id === id ? { ...r, title } : r))), () => api(`/api/rodadas/${id}`, "PATCH", { titulo: title })),
       deleteMyRide: (id) => act(() => setMyRides((rs) => rs.filter((r) => r.id !== id)), () => api(`/api/rodadas/${id}`, "DELETE")),
@@ -298,12 +314,20 @@ export function SocialProvider({ me: initialMe, people: initialPeople, rides: in
         await api(`/api/personas/${id}/denuncia`, "POST", { motivo });
       },
       clubs,
-      joinClub: (id) => setClubs((cs) => cs.map((c) => (c.id === id && !c.memberIds.includes(me.id) ? { ...c, memberIds: [...c.memberIds, me.id] } : c))),
-      leaveClub: (id) => setClubs((cs) => cs.map((c) => (c.id === id ? { ...c, memberIds: c.memberIds.filter((m) => m !== me.id) } : c))),
-      createClub: (d) => {
-        const id = `c_new_${Date.now()}`;
-        setClubs((cs) => [{ id, ...d, ownerId: me.id, memberIds: [me.id], rideIds: [] }, ...cs]);
-        return id;
+      joinClub: (id) =>
+        act(
+          () => setClubs((cs) => cs.map((c) => (c.id !== id ? c : c.privacy === "privado" ? { ...c, requested: true } : { ...c, memberIds: [...c.memberIds, me.id], memberCount: c.memberCount + 1 }))),
+          () => api(`/api/clubes/${id}/membresia`, "POST"),
+        ),
+      leaveClub: (id) =>
+        act(
+          () => setClubs((cs) => cs.map((c) => (c.id === id ? { ...c, requested: false, memberIds: c.memberIds.filter((m) => m !== me.id), memberCount: c.memberIds.includes(me.id) ? c.memberCount - 1 : c.memberCount } : c))),
+          () => api(`/api/clubes/${id}/membresia`, "DELETE"),
+        ),
+      createClub: async (d) => {
+        const r = await api<{ id: string }>("/api/clubes", "POST", { nombre: d.name, descripcion: d.description, municipio: d.municipality, privacidad: d.privacy });
+        router.refresh();
+        return r.id;
       },
       joinedChallenges,
       toggleChallenge: (id) => setJoinedChallenges((x) => (x.includes(id) ? x.filter((y) => y !== id) : [...x, id])),

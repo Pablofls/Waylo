@@ -22,7 +22,7 @@ export function RideAttendees({ id }: { id: string }) {
 
   return (
     <>
-      <ScreenHeader title="Quiénes van" subtitle={`${ride.title} · ${attendees.length} personas`} back={`/rodadas/${id}`} />
+      <ScreenHeader title="Quiénes van" subtitle={`${ride.title} · ${ride.attendeeCount} personas`} back={`/rodadas/${id}`} />
       <div className="p-4 pb-2">
         <div className="flex min-h-[52px] items-center gap-3 rounded-xl border border-line px-4 focus-within:border-brand-600">
           <Search size={20} className="text-muted" />

@@ -31,12 +31,13 @@ export function ClubDetail({ id }: { id: string }) {
       <ScreenHeader title={club.name} subtitle={club.zone} back="/comunidad" />
       <div className="flex-1 overflow-y-auto bg-white pb-6">
         <section className="px-4 pt-2">
-          <div className="flex items-center gap-4"><Avatar name={club.name} size={72} /><div><p className="flex items-center gap-1.5 text-sm text-muted"><MapPin size={14} />{club.zone}</p><p className="flex items-center gap-1.5 text-sm text-muted"><Users size={14} />{club.memberIds.length} miembros {club.privacy === "privado" && <><Lock size={14} />Privado</>}</p></div></div>
+          <div className="flex items-center gap-4"><Avatar name={club.name} size={72} /><div><p className="flex items-center gap-1.5 text-sm text-muted"><MapPin size={14} />{club.zone}</p><p className="flex items-center gap-1.5 text-sm text-muted"><Users size={14} />{club.memberCount} miembros {club.privacy === "privado" && <><Lock size={14} />Privado</>}</p></div></div>
           <p className="mt-4 text-[15px]">{club.description}</p>
           {owner && <p className="mt-2 text-sm text-muted">Organiza: <strong className="text-ink">{owner}</strong></p>}
           <div className="mt-4">
             {isOwner ? <p className="rounded-xl bg-brand-100 p-3 text-sm font-semibold text-brand-700">Eres quien organiza este club.</p>
               : isMember ? <Button full variant="outline" onClick={() => setConfirm(true)}>Salir del club</Button>
+              : club.requested ? <Button full variant="outline" onClick={() => leaveClub(club.id)}>Solicitud enviada · Cancelar</Button>
               : <Button full size="lg" onClick={() => joinClub(club.id)}>{club.privacy === "privado" ? "Solicitar unirme" : "Unirme al club"}</Button>}
           </div>
         </section>
@@ -52,11 +53,11 @@ export function ClubDetail({ id }: { id: string }) {
                   <li key={r.id}><Link href={`/rodadas/${r.id}`} className="flex min-h-[64px] items-center gap-3 px-4 py-3"><CalendarDays size={20} className="shrink-0 text-brand-600" /><span className="min-w-0 flex-1"><span className="block truncate text-[15px] font-semibold">{r.title}</span><span className="block truncate text-sm text-muted">{formatDateTime(r.date)} · {r.meetingPoint}</span></span><ChevronRight size={18} className="text-muted" /></Link></li>
                 ))}</ul>
               )}
-              {isMember && <Button href="/rodadas/nueva" full variant="secondary" className="mt-3">Crear rodada del club</Button>}
+              {isMember && <Button href={`/rodadas/nueva?club=${club.id}`} full variant="secondary" className="mt-3">Crear rodada del club</Button>}
             </section>
             <section className="px-4 pt-6">
               <h2 className="text-lg font-bold">Miembros</h2>
-              <div className="mt-2"><AttendeeStack names={members.map((m) => m.name)} total={members.length} /></div>
+              <div className="mt-2"><AttendeeStack names={members.map((m) => m.name)} total={club.memberCount} /></div>
               <ul className="mt-2">{members.map((m) => (
                 <li key={m.id}><Link href={m.isMe ? "/perfil" : `/personas/${m.id}`} className="flex min-h-[56px] items-center gap-3"><Avatar name={m.name} size={40} /><span className="flex-1 text-[15px] font-semibold">{m.name}{m.isMe ? " (tú)" : ""}</span>{m.id === club.ownerId && <span className="text-xs font-semibold text-brand-700">Organiza</span>}</Link></li>
               ))}</ul>

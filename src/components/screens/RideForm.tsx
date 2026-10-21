@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Copy, PartyPopper } from "lucide-react";
 import { ScreenHeader } from "@/components/layout/ScreenHeader";
@@ -15,6 +15,7 @@ import { ShareSheet } from "@/components/domain/ShareSheet";
 import { useSocial } from "@/lib/social";
 import type { Place, RideLevel, RidePace, RidePrivacy, Vehicle } from "@/types";
 
+// Nombres del catálogo cat_regla_rodada.
 const RULES = ["Casco puesto", "Luces delantera y trasera", "Respeta los semáforos", "Lleva agua", "Chaleco o ropa reflejante", "Kit de reparación", "Bicicleta revisada"];
 
 const today = () => {
@@ -31,7 +32,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-export function RideForm({ places, editId }: { places: Place[]; editId?: string }) {
+export function RideForm({ places, editId, clubId }: { places: Place[]; editId?: string; clubId?: string }) {
   const router = useRouter();
   const { me, friends, ride: find, createRide, updateRide } = useSocial();
   const editing = editId ? find(editId) : undefined;
@@ -41,7 +42,8 @@ export function RideForm({ places, editId }: { places: Place[]; editId?: string 
   const [description, setDescription] = useState(editing?.description ?? "");
   const [date, setDate] = useState(editing?.date.slice(0, 10) ?? "");
   const [time, setTime] = useState(editing?.date.slice(11, 16) ?? "");
-  const [place, setPlace] = useState<Place | null>(editing ? { name: editing.meetingPoint, detail: "", coordinates: editing.meetingCoordinates } : null);
+  const [place, setPlace] = useState<Place | null>(editing ? { id: editing.meetingPlaceId, name: editing.meetingPoint, detail: "", coordinates: editing.meetingCoordinates } : null);
+  const [busy, setBusy] = useState(false);
   const [level, setLevel] = useState<RideLevel>(editing?.level ?? "Principiante");
   const [pace, setPace] = useState<RidePace>(editing?.pace ?? "Relajado");
   const [vehicle, setVehicle] = useState<Vehicle>(editing?.vehicle ?? "bicicleta");
@@ -53,19 +55,21 @@ export function RideForm({ places, editId }: { places: Place[]; editId?: string 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [share, setShare] = useState(false);
+  const [origin, setOrigin] = useState("");
+  useEffect(() => setOrigin(window.location.origin), []);
 
   if (isEdit && !editing) return (<><ScreenHeader title="Editar rodada" back="/comunidad" /><p className="p-4 text-muted">No encontramos esta rodada.</p></>);
   if (isEdit && editing && editing.organizerId !== me.id) return (<><ScreenHeader title="Editar rodada" back={`/rodadas/${editId}`} /><p className="p-4 text-muted">Solo quien organiza puede editar la rodada.</p></>);
 
   const toggle = <T,>(list: T[], v: T) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
-  const submit = () => {
+  const submit = async () => {
     const e: Record<string, string> = {};
     if (title.trim().length < 4) e.title = "Escribe un nombre de al menos 4 caracteres.";
     if (!date) e.date = "Elige la fecha.";
     else if (!isEdit && date < today()) e.date = "La fecha debe ser hoy o futura.";
     if (!time) e.time = "Elige la hora.";
-    if (!place) e.place = "Elige el punto de salida.";
+    if (!place?.id) e.place = "Elige el punto de salida de la lista.";
     if (!(Number(km) > 0)) e.km = "Indica una distancia aproximada.";
     if (capacity && !(Number(capacity) >= 2)) e.capacity = "El cupo mínimo es 2.";
     setErrors(e);
@@ -76,17 +80,24 @@ export function RideForm({ places, editId }: { places: Place[]; editId?: string 
       description: description.trim() || "Sin descripción.",
       date: `${date}T${time}:00-06:00`,
       meetingPoint: place!.name,
+      meetingPlaceId: place!.id,
       meetingCoordinates: place!.coordinates,
       level, pace, vehicle,
       km: Number(km),
       capacity: capacity ? Number(capacity) : undefined,
       privacy, rules,
     };
-    if (isEdit && editId) {
-      updateRide(editId, draft);
-      router.push(`/rodadas/${editId}`);
-    } else {
-      setCreatedId(createRide(draft, invited));
+    setBusy(true);
+    try {
+      if (isEdit && editId) {
+        await updateRide(editId, draft);
+        router.push(`/rodadas/${editId}`);
+      } else {
+        setCreatedId(await createRide(draft, invited, clubId));
+      }
+    } catch (err) {
+      setErrors({ title: err instanceof Error ? err.message : "No pudimos guardar la rodada." });
+      setBusy(false);
     }
   };
 
@@ -97,13 +108,13 @@ export function RideForm({ places, editId }: { places: Place[]; editId?: string 
           <span className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-600 text-white"><PartyPopper size={30} /></span>
           <h1 className="mt-5 text-3xl font-bold">Rodada publicada</h1>
           <p className="mt-2 text-muted">{title.trim()} ya aparece en Comunidad. Comparte el enlace para que más personas se unan.</p>
-          <p className="mt-4 rounded-xl bg-canvas px-4 py-3 font-mono text-sm">{`https://waylo.app/rodadas/${createdId}`}</p>
+          <p className="mt-4 rounded-xl bg-canvas px-4 py-3 font-mono text-sm">{`${origin}/rodadas/${createdId}`}</p>
         </div>
         <div className="space-y-2 pb-6">
           <Button full size="lg" icon={<Copy size={18} />} onClick={() => setShare(true)}>Compartir enlace</Button>
           <Button full variant="outline" href={`/rodadas/${createdId}`}>Ver rodada</Button>
         </div>
-        <ShareSheet open={share} onClose={() => setShare(false)} title="Comparte la rodada" text="Cualquiera con el enlace podrá ver los detalles." url={`https://waylo.app/rodadas/${createdId}`} />
+        <ShareSheet open={share} onClose={() => setShare(false)} title="Comparte la rodada" text="Cualquiera con el enlace podrá ver los detalles." url={`${origin}/rodadas/${createdId}`} />
       </div>
     );
   }
@@ -188,7 +199,7 @@ export function RideForm({ places, editId }: { places: Place[]; editId?: string 
         )}
       </div>
       <div className="pb-safe border-t border-line bg-white px-4 pt-3">
-        <Button full size="lg" onClick={submit}>{isEdit ? "Guardar cambios" : "Publicar rodada"}</Button>
+        <Button full size="lg" disabled={busy} onClick={() => void submit()}>{busy ? "Guardando…" : isEdit ? "Guardar cambios" : "Publicar rodada"}</Button>
         <div className="h-3" />
       </div>
     </>

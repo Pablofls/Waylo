@@ -9,6 +9,8 @@ import { navegacion, opcionPorId, rutasGuardadas, trayectoHabitual } from "@/ser
 import { misReportes, miReporte, misVotos, reportesComunidad, reporteVisible } from "@/server/reportes";
 import { misAjustes, municipios } from "@/server/ajustes";
 import { actividadAmigos, actividadComunidad, misBloqueados, misReacciones, persona, personasConocidas, publicacion, sugerencias } from "@/server/social";
+import { rodadasGrupales } from "@/server/grupales";
+import { clubes } from "@/server/clubes";
 import { puntosDeRiesgo } from "@/server/riesgo";
 import { estadisticaMes, misRodadas, miRodada, resumenRodada } from "@/server/rodadas";
 import { mockReports, communityReports } from "@/mocks/reports";
@@ -75,16 +77,17 @@ export const getCommunityRides = async () => actividadComunidad(await sessionUse
 export const getPersonActivity = async (id: string) => actividadAmigos(await sessionUserId(), id);
 export const getPost = async (id: string) => publicacion(await sessionUserId(), id);
 
+export const getGroupRides = async () => rodadasGrupales(await sessionUserId());
+export const getClubs = async () => clubes(await sessionUserId());
+
 export async function getUser() {
   const u = await getOptionalUser();
   if (!u) redirect("/api/auth/sesion-invalida");
   return u;
 }
-export const getGroupRides = () => wait(mockGroupRides);
 export const getBadges = () => wait({ badges: mockBadges, confirmedReports });
 export const getNotifications = () => wait(notifications);
 export const getEmergencyContacts = () => wait(emergencyContacts);
-export const getClubs = () => wait(clubs);
 export const getChallenges = () => wait(challenges);
 export const getZones = () => wait(zones);
 export const getZone = (id: string) => wait(zones.find((z) => z.id === id) ?? null);

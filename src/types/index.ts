@@ -172,20 +172,24 @@ export interface GroupRide {
   /** ISO con offset de Monterrey, p. ej. 2026-10-24T20:00:00-06:00 */
   date: string;
   meetingPoint: string;
+  /** Id del lugar de salida (siempre un lugar público). */
+  meetingPlaceId?: string;
   meetingCoordinates: LngLat;
   level: RideLevel;
   pace: RidePace;
   vehicle: Vehicle;
   km: number;
   organizerId: string;
+  /** Asistentes cuyo perfil puedes ver (puede haber más: usa `attendeeCount`). */
   attendeeIds: string[];
+  attendeeCount: number;
   capacity?: number;
   privacy: RidePrivacy;
   rules: string[];
   status: "programada" | "cancelada" | "finalizada";
 }
 
-export type RideDraft = Omit<GroupRide, "id" | "organizerId" | "attendeeIds" | "status">;
+export type RideDraft = Omit<GroupRide, "id" | "organizerId" | "attendeeIds" | "attendeeCount" | "status">;
 
 export interface SavedPlace {
   id: string;
@@ -247,8 +251,12 @@ export interface Club {
   zone: string;
   privacy: "publico" | "privado";
   ownerId: string;
+  /** Miembros cuyo perfil puedes ver (en clubes privados, solo si eres miembro). */
   memberIds: string[];
+  memberCount: number;
   rideIds: string[];
+  /** Ya enviaste tu solicitud de ingreso (club privado). */
+  requested?: boolean;
 }
 
 export interface Challenge {
