@@ -18,6 +18,7 @@ Todas deben leer primero `docs/arquitectura.md`, `docs/vm-setup.md` y [`prompts/
 |---|---|---|---|
 | A. Base de datos (normalizada a 4FN) | [`prompts/sesion-a-base-de-datos.md`](prompts/sesion-a-base-de-datos.md) | `db-esquema` | Nada |
 | B. Servicio en tiempo real (GPS real) | [`prompts/sesion-b-tiempo-real.md`](prompts/sesion-b-tiempo-real.md) | `realtime` | A (para guardar `ride_points`) |
+| B2. Persistencia y validación de rodadas (seguimiento de B) | [`prompts/sesion-b2-persistencia.md`](prompts/sesion-b2-persistencia.md) | `realtime-persistencia` | A y B en `main` (ya) |
 | D. Despliegue en la VM | [`prompts/sesion-d-despliegue.md`](prompts/sesion-d-despliegue.md) | `despliegue` | Nada |
 | C. App con datos reales | [`prompts/sesion-c-app-datos.md`](prompts/sesion-c-app-datos.md) | `app-datos` | A y B en `main` |
 

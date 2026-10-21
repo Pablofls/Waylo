@@ -11,6 +11,12 @@ Lista viva que mantiene la sesión principal. Cada punto indica quién lo resuel
 | 3 | **Escribir el lote fuera del candado del hub.** Hoy `BatchWriter.flush` corre dentro de `Hub._lock`; con Postgres lento bloquearía a todos los clientes. Usar una cola y un hilo escritor. | B (seguimiento) |
 | 5 | La vista de comparticiones activas (`allow` del token) para que `POST /api/ws-token` arme la lista de usuarios visibles. | C |
 
+## Decisiones tomadas
+
+- **Compartir ubicación sin rodada:** `ride_points` exige `ride_id`. La app crea una rodada ligera ("Ubicación compartida") para sostener el flujo; no se cambia el esquema ni el contrato. El servicio nunca crea rodadas.
+- Los puntos 1 a 3 de la tabla de arriba pasan a la sesión B2 (`docs/prompts/sesion-b2-persistencia.md`).
+- El punto 5 (vista de comparticiones activas) ya existe: `v_comparticion_activa`.
+
 ## Mejoras de despliegue (no bloquean)
 
 - `next build` sobrescribe `.next` mientras la app corre: compilar en otra carpeta y cambiar al terminar.

@@ -24,11 +24,22 @@ Para evitar conflictos, cada sesión modifica **solo** lo suyo:
 |---|---|---|
 | A. Base de datos | `db-esquema` | `db/**`, `docs/base-de-datos.md` |
 | B. Tiempo real | `realtime` | `services/realtime/**` |
+| B2. Persistencia del tiempo real | `realtime-persistencia` | `services/realtime/**` (no a la vez que B) |
 | D. Despliegue | `despliegue` | `deploy/**`, `docs/vm-setup.md` |
 | C. App con datos reales | `app-datos` | `src/**`, `package.json`, `package-lock.json`, `README.md` |
 
 - **No edites `docs/arquitectura.md`** (es el contrato). Si necesitas cambiarlo, descríbelo en un archivo `docs/propuestas/<tu-rama>.md` y avisa: la sesión principal decide e integra el cambio.
 - Cada sesión usa su propio `.env.example` dentro de su carpeta (`db/.env.example`, `services/realtime/.env.example`, `deploy/.env.example`). No hay un `.env.example` compartido en la raíz.
+
+## Carpeta de trabajo propia (importante)
+
+Varias sesiones abiertas en la misma carpeta se pisan las ramas y los archivos sin commit (ya pasó). **Cada sesión nueva trabaja en su propio directorio de trabajo de git**, creado desde `origin/main`:
+
+```bash
+git worktree add ../Waylo-<rama> -b <rama> origin/main
+```
+
+y se abre la sesión en esa carpeta. Además, nunca uses `git add -A`: agrega solo las rutas de tu alcance.
 
 ## Orden de integración
 
