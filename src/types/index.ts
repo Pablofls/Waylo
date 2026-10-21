@@ -86,17 +86,6 @@ export interface Ride {
   coordinates: LngLat[];
 }
 
-export interface GroupRide {
-  id: string;
-  title: string;
-  date: string;
-  meetingPoint: string;
-  level: "Principiante" | "Intermedio" | "Avanzado";
-  km: number;
-  attendees: number;
-  organizer: string;
-}
-
 export interface BadgeInfo {
   id: string;
   name: string;
@@ -108,13 +97,6 @@ export interface BadgeInfo {
 
 export interface RiskPointProps {
   weight: number;
-}
-
-export interface Friend {
-  id: string;
-  name: string;
-  city: string;
-  mutual: number;
 }
 
 export interface FriendActivity {
@@ -130,6 +112,7 @@ export interface FriendActivity {
 
 export interface CommunityRide {
   id: string;
+  personId: string;
   person: string;
   title: string;
   km: number;
@@ -138,3 +121,47 @@ export interface CommunityRide {
   at: string;
   zone: string;
 }
+
+export type Relation = "amigo" | "solicitud_recibida" | "solicitud_enviada" | "ninguna";
+
+export interface Person {
+  id: string;
+  name: string;
+  email: string;
+  city: string;
+  vehicle: Vehicle;
+  bio: string;
+  memberSince: string;
+  stats: { rides: number; km: number; avgSafetyScore: number };
+  badgeIds: string[];
+  relation: Relation;
+  /** Amigos en común con el usuario. */
+  mutual: number;
+}
+
+export type RideLevel = "Principiante" | "Intermedio" | "Avanzado";
+export type RidePace = "Relajado" | "Moderado" | "Rápido";
+export type RidePrivacy = "publica" | "amigos";
+
+/** Rodada grupal: una cita con hora y punto de salida; cada quien registra su rodada individual. */
+export interface GroupRide {
+  id: string;
+  title: string;
+  description: string;
+  /** ISO con offset de Monterrey, p. ej. 2026-10-24T20:00:00-06:00 */
+  date: string;
+  meetingPoint: string;
+  meetingCoordinates: LngLat;
+  level: RideLevel;
+  pace: RidePace;
+  vehicle: Vehicle;
+  km: number;
+  organizerId: string;
+  attendeeIds: string[];
+  capacity?: number;
+  privacy: RidePrivacy;
+  rules: string[];
+  status: "programada" | "cancelada" | "finalizada";
+}
+
+export type RideDraft = Omit<GroupRide, "id" | "organizerId" | "attendeeIds" | "status">;

@@ -8,7 +8,8 @@ import { RideCard } from "@/components/domain/RideCard";
 import { ActivityCard } from "@/components/domain/ActivityCard";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/States";
-import type { CommunityRide, Friend, FriendActivity, Place, Ride, RouteOption, User } from "@/types";
+import { useSocial } from "@/lib/social";
+import type { CommunityRide, FriendActivity, Place, Ride, RouteOption, User } from "@/types";
 
 type Tab = "mias" | "comunidad" | "amigos";
 
@@ -17,11 +18,11 @@ interface Props {
   usual: { origin: Place; destination: Place; route: RouteOption; newAlerts: number };
   rides: Ride[];
   communityRides: CommunityRide[];
-  friends: Friend[];
   activity: FriendActivity[];
 }
 
-export function Home({ user, usual, rides, communityRides, friends, activity }: Props) {
+export function Home({ user, usual, rides, communityRides, activity }: Props) {
+  const { friends, received } = useSocial();
   const [tab, setTab] = useState<Tab>("mias");
   const { route } = usual;
   const tabs: { v: Tab; l: string }[] = [
@@ -39,7 +40,7 @@ export function Home({ user, usual, rides, communityRides, friends, activity }: 
         </div>
         <Link href="/amigos" aria-label="Amigos" className="relative flex h-12 w-12 items-center justify-center rounded-full border border-line active:bg-canvas">
           <Users size={22} />
-          <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-600 px-1 text-[11px] font-bold text-white">2</span>
+          {received.length > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-600 px-1 text-[11px] font-bold text-white">{received.length}</span>}
         </Link>
       </header>
 
@@ -74,19 +75,22 @@ export function Home({ user, usual, rides, communityRides, friends, activity }: 
 
       {tab === "mias" && rides.map((r) => <RideCard key={r.id} ride={r} />)}
       {tab === "comunidad" &&
-        communityRides.map((r) => <ActivityCard key={r.id} name={r.person} title={r.title} km={r.km} minutes={r.minutes} safetyScore={r.safetyScore} at={r.at} meta={r.zone} />)}
+        communityRides.map((r) => <ActivityCard key={r.id} personId={r.personId} name={r.person} title={r.title} km={r.km} minutes={r.minutes} safetyScore={r.safetyScore} at={r.at} meta={r.zone} />)}
       {tab === "amigos" &&
-        (activity.length === 0 ? (
-          <EmptyState icon={<UserPlus size={26} />} title="Aún no sigues a nadie" text="Agrega amigos para ver sus rodadas y qué tan seguras fueron." action={<Button href="/amigos">Agregar amigos</Button>} />
-        ) : (
-          <>
-            {activity.map((a) => {
-              const f = friends.find((x) => x.id === a.friendId)!;
-              return <ActivityCard key={a.id} name={f.name} title={a.title} km={a.km} minutes={a.minutes} safetyScore={a.safetyScore} at={a.at} vehicle={a.vehicle} />;
-            })}
-            <div className="p-4"><Button href="/amigos" variant="secondary" full icon={<UserPlus size={18} />}>Agregar amigos</Button></div>
-          </>
-        ))}
+        (() => {
+          const feed = activity.filter((a) => friends.some((f) => f.id === a.friendId)).sort((a, b) => b.at.localeCompare(a.at));
+          return feed.length === 0 ? (
+            <EmptyState icon={<UserPlus size={26} />} title="Aún no sigues a nadie" text="Agrega amigos para ver sus rodadas y qué tan seguras fueron." action={<Button href="/amigos">Buscar amigos</Button>} />
+          ) : (
+            <>
+              {feed.map((a) => {
+                const f = friends.find((x) => x.id === a.friendId)!;
+                return <ActivityCard key={a.id} personId={f.id} name={f.name} title={a.title} km={a.km} minutes={a.minutes} safetyScore={a.safetyScore} at={a.at} vehicle={a.vehicle} />;
+              })}
+              <div className="p-4"><Button href="/amigos" variant="secondary" full icon={<UserPlus size={18} />}>Buscar amigos</Button></div>
+            </>
+          );
+        })()}
       <div className="h-4" />
     </div>
   );

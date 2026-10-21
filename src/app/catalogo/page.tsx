@@ -15,7 +15,9 @@ const groups = [
     title: "Inicio y amigos",
     items: [
       { n: "4", t: "Inicio: mis rodadas, comunidad y amigos", href: "/inicio" },
-      { n: "4b", t: "Amigos: lista, solicitudes y agregar", href: "/amigos" },
+      { n: "4b", t: "Amigos: lista, solicitudes y búsqueda", href: "/amigos" },
+      { n: "4c", t: "Perfil de un amigo", href: "/personas/p_1" },
+      { n: "4d", t: "Perfil de una persona que no es amiga", href: "/personas/p_7" },
     ],
   },
   {
@@ -40,7 +42,11 @@ const groups = [
     items: [
       { n: "9", t: "Mis reportes", href: "/reportes" },
       { n: "9b", t: "Detalle de reporte con línea de tiempo", href: "/reportes/r_1042" },
-      { n: "10", t: "Comunidad", href: "/comunidad" },
+      { n: "10", t: "Comunidad: reportes y rodadas grupales", href: "/comunidad" },
+      { n: "10b", t: "Detalle de rodada grupal", href: "/rodadas/g_4" },
+      { n: "10c", t: "Quiénes van a una rodada", href: "/rodadas/g_4/asistentes" },
+      { n: "10d", t: "Crear rodada", href: "/rodadas/nueva" },
+      { n: "10e", t: "Editar rodada propia", href: "/rodadas/g_6/editar" },
       { n: "11", t: "Perfil", href: "/perfil" },
       { n: "12", t: "Waylo Premium", href: "/premium" },
     ],

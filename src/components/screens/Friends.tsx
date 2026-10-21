@@ -1,50 +1,45 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Link2, Search, X } from "lucide-react";
-import { Avatar } from "@/components/domain/Avatar";
+import { Link2, Search, UserPlus } from "lucide-react";
+import { PersonRow } from "@/components/domain/PersonRow";
+import { RelationButton } from "@/components/domain/RelationButton";
+import { ShareSheet } from "@/components/domain/ShareSheet";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/States";
-import type { Friend } from "@/types";
+import { useSocial } from "@/lib/social";
+import type { Person } from "@/types";
 
 type Tab = "amigos" | "solicitudes" | "agregar";
 
-interface Props {
-  friends: Friend[];
-  requests: Friend[];
-  suggestions: Friend[];
-}
-
-function Row({ f, children }: { f: Friend; children: React.ReactNode }) {
+function SearchBox({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
   return (
-    <li className="flex min-h-[72px] items-center gap-3 border-b border-line px-4 py-3">
-      <Avatar name={f.name} size={48} />
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[15px] font-semibold">{f.name}</p>
-        <p className="truncate text-sm text-muted">{f.city} · {f.mutual} en común</p>
-      </div>
-      {children}
-    </li>
+    <div className="flex min-h-[52px] items-center gap-3 rounded-xl border border-line bg-white px-4 focus-within:border-brand-600">
+      <Search size={20} className="shrink-0 text-muted" />
+      <input value={value} onChange={(e) => onChange(e.target.value)} aria-label={placeholder} placeholder={placeholder} className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-[#8A929C]" />
+    </div>
   );
 }
 
-export function Friends({ friends, requests, suggestions }: Props) {
-  const [tab, setTab] = useState<Tab>("amigos");
-  const [mine, setMine] = useState(friends);
-  const [pending, setPending] = useState(requests);
-  const [sent, setSent] = useState<string[]>([]);
-  const [q, setQ] = useState("");
+const match = (p: Person, q: string) => `${p.name} ${p.city} ${p.email}`.toLowerCase().includes(q.trim().toLowerCase());
+const detail = (p: Person) => `${p.city} · ${p.mutual} en común`;
 
-  const accept = (f: Friend) => {
-    setMine([...mine, f]);
-    setPending(pending.filter((p) => p.id !== f.id));
-  };
-  const results = suggestions.filter((s) => `${s.name} ${s.city}`.toLowerCase().includes(q.trim().toLowerCase()));
+export function Friends() {
+  const { people, friends, received, sent } = useSocial();
+  const [tab, setTab] = useState<Tab>("amigos");
+  const [qFriends, setQFriends] = useState("");
+  const [qAll, setQAll] = useState("");
+  const [share, setShare] = useState(false);
+
   const tabs: { v: Tab; l: string }[] = [
-    { v: "amigos", l: `Amigos (${mine.length})` },
-    { v: "solicitudes", l: `Solicitudes${pending.length ? ` (${pending.length})` : ""}` },
-    { v: "agregar", l: "Agregar" },
+    { v: "amigos", l: `Amigos (${friends.length})` },
+    { v: "solicitudes", l: `Solicitudes${received.length ? ` (${received.length})` : ""}` },
+    { v: "agregar", l: "Buscar" },
   ];
+  const searching = qAll.trim().length > 0;
+  const results = people.filter((p) => match(p, qAll));
+  const suggestions = people.filter((p) => p.relation === "ninguna").sort((a, b) => b.mutual - a.mutual).slice(0, 5);
+  const myFriends = friends.filter((p) => match(p, qFriends));
 
   return (
     <>
@@ -55,57 +50,56 @@ export function Friends({ friends, requests, suggestions }: Props) {
           </button>
         ))}
       </div>
-      <div className="flex-1 overflow-y-auto bg-white">
-        {tab === "amigos" &&
-          (mine.length === 0 ? (
-            <EmptyState title="Aún no tienes amigos" text="Agrega a quienes ruedan contigo para ver su actividad." />
-          ) : (
-            <ul>{mine.map((f) => <Row key={f.id} f={f}><span className="text-xs font-semibold text-muted">Amigos</span></Row>)}</ul>
-          ))}
 
-        {tab === "solicitudes" &&
-          (pending.length === 0 ? (
-            <EmptyState title="Sin solicitudes" text="Cuando alguien quiera ser tu amigo aparecerá aquí." />
-          ) : (
-            <ul>
-              {pending.map((f) => (
-                <Row key={f.id} f={f}>
-                  <button aria-label={`Rechazar a ${f.name}`} onClick={() => setPending(pending.filter((p) => p.id !== f.id))} className="flex h-11 w-11 items-center justify-center rounded-full border border-line"><X size={20} /></button>
-                  <button aria-label={`Aceptar a ${f.name}`} onClick={() => accept(f)} className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-600 text-white"><Check size={20} strokeWidth={3} /></button>
-                </Row>
-              ))}
-            </ul>
-          ))}
+      <div className="flex-1 overflow-y-auto bg-white">
+        {tab === "amigos" && (
+          <>
+            {friends.length > 0 && <div className="p-4 pb-2"><SearchBox value={qFriends} onChange={setQFriends} placeholder="Buscar entre tus amigos" /></div>}
+            {friends.length === 0 ? (
+              <EmptyState icon={<UserPlus size={26} />} title="Aún no tienes amigos" text="Busca a quienes ruedan contigo para ver su actividad." action={<Button onClick={() => setTab("agregar")}>Buscar personas</Button>} />
+            ) : myFriends.length === 0 ? (
+              <EmptyState title="Sin resultados" text="Ningún amigo coincide con tu búsqueda." />
+            ) : (
+              <ul>{myFriends.map((p) => <PersonRow key={p.id} id={p.id} name={p.name} detail={`${p.city} · ${p.stats.rides} rodadas`} right={<RelationButton person={p} />} />)}</ul>
+            )}
+          </>
+        )}
+
+        {tab === "solicitudes" && (
+          <>
+            {received.length === 0 && sent.length === 0 && <EmptyState title="Sin solicitudes" text="Cuando alguien quiera ser tu amigo aparecerá aquí." />}
+            {received.length > 0 && (
+              <>
+                <h2 className="px-4 pb-1 pt-4 text-sm font-bold uppercase tracking-wide text-muted">Recibidas</h2>
+                <ul>{received.map((p) => <PersonRow key={p.id} id={p.id} name={p.name} detail={detail(p)} right={<RelationButton person={p} />} />)}</ul>
+              </>
+            )}
+            {sent.length > 0 && (
+              <>
+                <h2 className="px-4 pb-1 pt-4 text-sm font-bold uppercase tracking-wide text-muted">Enviadas</h2>
+                <ul>{sent.map((p) => <PersonRow key={p.id} id={p.id} name={p.name} detail={detail(p)} right={<RelationButton person={p} />} />)}</ul>
+              </>
+            )}
+          </>
+        )}
 
         {tab === "agregar" && (
-          <div>
+          <>
             <div className="space-y-3 p-4">
-              <div className="flex min-h-[52px] items-center gap-3 rounded-xl border border-line px-4 focus-within:border-brand-600">
-                <Search size={20} className="text-muted" />
-                <input value={q} onChange={(e) => setQ(e.target.value)} aria-label="Buscar por nombre o correo" placeholder="Buscar por nombre o correo" className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-[#8A929C]" />
-              </div>
-              <Button variant="secondary" full icon={<Link2 size={18} />}>Invitar con un enlace</Button>
+              <SearchBox value={qAll} onChange={setQAll} placeholder="Nombre, ciudad o correo" />
+              <Button variant="secondary" full icon={<Link2 size={18} />} onClick={() => setShare(true)}>Invitar con un enlace</Button>
             </div>
-            <p className="px-4 pb-1 text-sm font-bold uppercase tracking-wide text-muted">{q ? "Resultados" : "Personas que quizá conoces"}</p>
-            {results.length === 0 ? (
-              <EmptyState title="Sin resultados" text="Prueba con otro nombre o invita a tu amigo con un enlace." />
+            <h2 className="px-4 pb-1 text-sm font-bold uppercase tracking-wide text-muted">{searching ? `Resultados (${results.length})` : "Personas que quizá conoces"}</h2>
+            {(searching ? results : suggestions).length === 0 ? (
+              <EmptyState title="Sin resultados" text="Prueba con otro nombre o invita a tu amigo con un enlace." action={<Button variant="outline" onClick={() => setShare(true)}>Invitar con un enlace</Button>} />
             ) : (
-              <ul>
-                {results.map((f) => {
-                  const done = sent.includes(f.id);
-                  return (
-                    <Row key={f.id} f={f}>
-                      <Button variant={done ? "secondary" : "primary"} disabled={done} onClick={() => setSent([...sent, f.id])} className="!min-h-[44px] !px-4 text-sm">
-                        {done ? "Enviada" : "Agregar"}
-                      </Button>
-                    </Row>
-                  );
-                })}
-              </ul>
+              <ul>{(searching ? results : suggestions).map((p) => <PersonRow key={p.id} id={p.id} name={p.name} detail={detail(p)} right={<RelationButton person={p} />} />)}</ul>
             )}
-          </div>
+          </>
         )}
       </div>
+
+      <ShareSheet open={share} onClose={() => setShare(false)} title="Invita a tus amigos" text="Quien abra el enlace podrá crear su cuenta y agregarte." url="https://waylo.app/invitar/daniela-garza" />
     </>
   );
 }

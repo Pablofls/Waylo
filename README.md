@@ -14,6 +14,7 @@ npm run dev                  # http://localhost:3000
 
 - `/catalogo`: enlaces a todas las pantallas.
 - `/design`: guía de estilo.
+- `docs/pantallas.md`: inventario de pantallas construidas y pendientes.
 - En escritorio la app se centra en un contenedor tipo teléfono.
 
 ## Variable de entorno del mapa
@@ -33,6 +34,7 @@ La rodada en vivo usa modo simulación por defecto (desactívalo para usar el GP
 ## Pendiente para fase 2
 
 - Base de datos (Supabase + PostGIS): usuarios, rodadas (trazas), reportes y rodadas grupales, en lugar de `src/mocks`.
+- Amigos y rodadas grupales reales (hoy viven en memoria, en `src/lib/social.tsx`, y se pierden al recargar).
 - Autenticación real (login, registro, Google y Apple, recuperar contraseña).
 - Rutas reales (OpenRouteService desde API Routes) y cálculo del Safety Score por factor.
 - Map matching de las trazas (GraphHopper o Valhalla).

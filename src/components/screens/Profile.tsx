@@ -9,6 +9,7 @@ import { BadgeMedal } from "@/components/domain/BadgeMedal";
 import { Segmented } from "@/components/ui/Segmented";
 import { Slider } from "@/components/ui/Slider";
 import { Toggle } from "@/components/ui/Toggle";
+import { useSocial } from "@/lib/social";
 import type { BadgeInfo, Ride, User, Vehicle } from "@/types";
 
 interface Props {
@@ -17,7 +18,6 @@ interface Props {
   rides: Ride[];
   badges: BadgeInfo[];
   confirmedReports: number;
-  friendCount: number;
 }
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
@@ -29,7 +29,8 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-export function Profile({ user, stats, rides, badges, confirmedReports, friendCount }: Props) {
+export function Profile({ user, stats, rides, badges, confirmedReports }: Props) {
+  const { friends, received } = useSocial();
   const [vehicle, setVehicle] = useState<Vehicle>(user.vehicle);
   const [pref, setPref] = useState(user.routePreference);
   const [n, setN] = useState(user.notifications);
@@ -64,7 +65,7 @@ export function Profile({ user, stats, rides, badges, confirmedReports, friendCo
 
       <Link href="/amigos" className="mx-4 mt-3 flex min-h-[64px] items-center gap-3 rounded-card border border-line px-4">
         <Users size={22} />
-        <span className="flex-1"><span className="block font-bold">Amigos</span><span className="block text-sm text-muted">{friendCount} amigos · 2 solicitudes</span></span>
+        <span className="flex-1"><span className="block font-bold">Amigos</span><span className="block text-sm text-muted">{friends.length} amigos{received.length ? ` · ${received.length} ${received.length === 1 ? "solicitud" : "solicitudes"}` : ""}</span></span>
         <ChevronRight size={20} className="text-muted" />
       </Link>
 

@@ -23,15 +23,17 @@ interface Props {
   origin: Place;
   places: Place[];
   maxExtraMinutes: number;
+  /** Destino preseleccionado (por ejemplo, el punto de salida de una rodada grupal). */
+  initialDest?: Place | null;
 }
 
 const ME: Place = { name: "Mi ubicación", detail: "Cerca de la UDEM, San Pedro Garza García", coordinates: [-100.399, 25.654] };
 
-export function MapPlanner({ risk, reports, routes, origin, places, maxExtraMinutes }: Props) {
+export function MapPlanner({ risk, reports, routes, origin, places, maxExtraMinutes, initialDest }: Props) {
   const [heat, setHeat] = useState(true);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [from, setFrom] = useState<Place>({ ...ME, coordinates: origin.coordinates });
-  const [dest, setDest] = useState<Place | null>(null);
+  const [dest, setDest] = useState<Place | null>(initialDest ?? null);
   const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState("");
   const [picked, setPicked] = useState<RouteKind>("segura");
