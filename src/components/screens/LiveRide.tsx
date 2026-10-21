@@ -254,7 +254,7 @@ export function LiveRide({ route, steps, alerts, risk }: Props) {
       <ShareTripSheet open={shareOpen} sharingWith={sharingWith} etaLabel={route ? `${Math.max(1, Math.round(route.minutes * (1 - progress)))} min` : "sin destino"} onStart={setSharingWith} onStop={() => setSharingWith([])} onClose={() => setShareOpen(false)} />
       <EmergencySheet open={sosOpen} alerted={alerted} onAlert={() => setAlerted(true)} onSimulateFall={() => { setSosOpen(false); setFall(true); }} onClose={() => setSosOpen(false)} />
       {fall && <FallAlert contactNames={emergencyContacts.map((c) => c.name.split(" ")[0])} onOk={() => setFall(false)} />}
-      <ReportSheet open={sheet} onClose={() => setSheet(false)} onSaved={() => setReportCount((n) => n + 1)} locationLabel="Av. Morones Prieto, San Pedro" />
+      <ReportSheet open={sheet} onClose={() => setSheet(false)} position={ride.position} rideId={rideId} onSaved={() => setReportCount((n) => n + 1)} locationLabel="Tu ubicación en la rodada" />
     </div>
   );
 }

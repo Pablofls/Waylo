@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useMemo, useOptimistic, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { api, errorText } from "@/lib/api";
-import type { ActivityComment, AppNotification, Club, Place, EmergencyContact, GroupRide, Person, Relation, ReportCompletion, Ride, RideDraft, SavedPlace, SavedRoute, Subscription, User } from "@/types";
+import type { ActivityComment, AppNotification, Club, Place, EmergencyContact, GroupRide, LngLat, Person, Relation, ReportCategory, ReportCompletion, Ride, RideDraft, SavedPlace, SavedRoute, Subscription, User } from "@/types";
 
 interface SessionCtx {
   /** Lugares públicos (destinos y puntos de salida). */
@@ -35,12 +35,14 @@ interface SessionCtx {
   unreadCount: number;
   markRead: (id: string) => void;
   markAllRead: () => void;
-  completions: Record<string, ReportCompletion>;
-  completeReport: (id: string, c: ReportCompletion) => void;
+  /** Crea un reporte rápido en `at` ([lng, lat]). */
+  createReport: (category: ReportCategory, at: LngLat, rideId?: string | null) => Promise<void>;
+  completeReport: (id: string, c: Omit<ReportCompletion, "hasPhoto">, photo?: File | "quitar" | null) => Promise<void>;
+  /** Tu respuesta a "¿sigue ahí?" por reporte. */
   confirmations: Record<string, "sigue" | "resuelto">;
   confirmReport: (id: string, v: "sigue" | "resuelto") => void;
-  cancelledReports: string[];
-  cancelReport: (id: string) => void;
+  cancelReport: (id: string) => Promise<void>;
+  denounceReport: (id: string, reason: string) => Promise<void>;
   savedRoutes: SavedRoute[];
   addSavedRoute: (r: SavedRoute, from: Place, to: Place) => void;
   removeSavedRoute: (id: string) => void;
@@ -97,17 +99,23 @@ interface Props {
   comments: ActivityComment[];
   clubs: Club[];
   publicPlaces: Place[];
+  confirmations: Record<string, "sigue" | "resuelto">;
   children: React.ReactNode;
 }
 
 type Updater<T> = (cur: T) => T;
+
+async function uploadPhoto(reportId: string, file: File) {
+  const res = await fetch(`/api/reportes/${reportId}/foto`, { method: "PUT", body: file, credentials: "same-origin" });
+  if (!res.ok) throw new Error(((await res.json().catch(() => ({}))) as { error?: string }).error ?? "No pudimos subir la foto.");
+}
 
 /**
  * Estado de sesión en el cliente. La fuente de verdad es el servidor: las props llegan del layout y cada
  * acción aplica el cambio de inmediato (optimista), llama a la API y vuelve a pedir los datos del servidor
  * (`router.refresh()`); si la API falla, el cambio se revierte y `actionError` explica por qué.
  */
-export function SocialProvider({ me: initialMe, people: initialPeople, rides: initialRides, myRides: initialMyRides, savedPlaces: initialPlaces, notifications: initialNotifs, savedRoutes: initialRoutes, emergencyContacts: initialContacts, searchHistory: initialSearches, comments: initialComments, clubs: initialClubs, publicPlaces, children }: Props) {
+export function SocialProvider({ me: initialMe, people: initialPeople, rides: initialRides, myRides: initialMyRides, savedPlaces: initialPlaces, notifications: initialNotifs, savedRoutes: initialRoutes, emergencyContacts: initialContacts, searchHistory: initialSearches, comments: initialComments, clubs: initialClubs, publicPlaces, confirmations: initialConfirmations, children }: Props) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [actionError, setActionError] = useState<string | null>(null);
@@ -133,9 +141,7 @@ export function SocialProvider({ me: initialMe, people: initialPeople, rides: in
   const [myRides, setMyRides] = useOptimistic<Ride[], Updater<Ride[]>>(initialMyRides, (cur, fn) => fn(cur));
   const [places, setPlaces] = useOptimistic<SavedPlace[], Updater<SavedPlace[]>>(initialPlaces, (cur, fn) => fn(cur));
   const [notifs, setNotifs] = useState(initialNotifs);
-  const [completions, setCompletions] = useState<Record<string, ReportCompletion>>({});
-  const [confirmations, setConfirmations] = useState<Record<string, "sigue" | "resuelto">>({});
-  const [cancelledReports, setCancelledReports] = useState<string[]>([]);
+  const [confirmations, setConfirmations] = useOptimistic<Record<string, "sigue" | "resuelto">, Updater<Record<string, "sigue" | "resuelto">>>(initialConfirmations, (cur, fn) => fn(cur));
   const [routes, setRoutes] = useOptimistic<SavedRoute[], Updater<SavedRoute[]>>(initialRoutes, (cur, fn) => fn(cur));
   const [contacts, setContacts] = useState(initialContacts);
   const [fallDetection, setFallDetection] = useState(true);
@@ -185,12 +191,25 @@ export function SocialProvider({ me: initialMe, people: initialPeople, rides: in
       unreadCount: notifs.filter((n) => !n.read).length,
       markRead: (id) => setNotifs((ns) => ns.map((n) => (n.id === id ? { ...n, read: true } : n))),
       markAllRead: () => setNotifs((ns) => ns.map((n) => ({ ...n, read: true }))),
-      completions,
-      completeReport: (id, c) => setCompletions((x) => ({ ...x, [id]: c })),
+      createReport: async (categoria, at, rodadaId) => {
+        await api("/api/reportes", "POST", { categoria, lng: at[0], lat: at[1], rodadaId: rodadaId ?? undefined });
+        router.refresh();
+      },
+      completeReport: async (id, c, photo) => {
+        await api(`/api/reportes/${id}`, "PATCH", c);
+        if (photo === "quitar") await api(`/api/reportes/${id}/foto`, "DELETE");
+        else if (photo) await uploadPhoto(id, photo);
+        router.refresh();
+      },
       confirmations,
-      confirmReport: (id, v) => setConfirmations((x) => ({ ...x, [id]: v })),
-      cancelledReports,
-      cancelReport: (id) => setCancelledReports((x) => (x.includes(id) ? x : [...x, id])),
+      confirmReport: (id, v) => act(() => setConfirmations((x) => ({ ...x, [id]: v })), () => api(`/api/reportes/${id}/confirmacion`, "POST", { resultado: v })),
+      cancelReport: async (id) => {
+        await api(`/api/reportes/${id}`, "DELETE");
+        router.refresh();
+      },
+      denounceReport: async (id, motivo) => {
+        await api(`/api/reportes/${id}/denuncia`, "POST", { motivo });
+      },
       savedRoutes: routes,
       addSavedRoute: (r, from, to) => act(() => setRoutes((x) => [...x, r]), () => api("/api/rutas/guardadas", "POST", { name: r.name, from, to, routeId: r.routeId })),
       removeSavedRoute: (id) => act(() => setRoutes((x) => x.filter((r) => r.id !== id)), () => api(`/api/rutas/guardadas/${id}`, "DELETE")),
@@ -235,7 +254,7 @@ export function SocialProvider({ me: initialMe, people: initialPeople, rides: in
       joinedChallenges,
       toggleChallenge: (id) => setJoinedChallenges((x) => (x.includes(id) ? x.filter((y) => y !== id) : [...x, id])),
     }),
-    [publicPlaces, actionError, act, me, people, rides, myRides, places, notifs, completions, confirmations, cancelledReports, routes, contacts, fallDetection, blocked, subscription, searches, offlineMaps, liveShare, kudos, comments, clubs, joinedChallenges, setRelation, patchRide],
+    [publicPlaces, actionError, act, router, me, people, rides, myRides, places, notifs, confirmations, routes, contacts, fallDetection, blocked, subscription, searches, offlineMaps, liveShare, kudos, comments, clubs, joinedChallenges, setRelation, patchRide],
   );
 
   return (

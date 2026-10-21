@@ -67,7 +67,7 @@ export function PostDetail({ post }: { post: Post | null }) {
         <button type="submit" disabled={!text.trim()} aria-label="Enviar comentario" className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-600 text-white disabled:opacity-40"><Send size={20} /></button>
       </form>
       <div className="h-3 bg-white" />
-      <ReportContentSheet open={reporting} title="Reportar comentario" reasons={["Es ofensivo", "Es spam", "Información falsa", "Otro"]} onClose={() => setReporting(false)} />
+      <ReportContentSheet open={reporting} title="Reportar comentario" reasons={[{ clave: "inapropiado", label: "Es ofensivo" }, { clave: "spam", label: "Es spam" }, { clave: "falso_o_repetido", label: "Información falsa" }, { clave: "otro", label: "Otro" }]} onSend={async () => {}} onClose={() => setReporting(false)} />
     </>
   );
 }

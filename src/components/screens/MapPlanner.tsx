@@ -188,7 +188,7 @@ export function MapPlanner({ risk, reports, places, maxExtraMinutes, initialDest
                 <p className="font-bold">{categoryById(selectedReport.category).label}</p>
                 <p className="truncate text-sm text-muted">{selectedReport.street}</p>
                 <p className="mt-1 text-xs text-muted">{formatDateTime(selectedReport.createdAt)} · {selectedReport.confirmations} confirmaciones</p>
-                <Link href={selectedReport.id.startsWith("r_") ? `/reportes/${selectedReport.id}` : `/reportes-comunidad/${selectedReport.id}`} className="mt-1 inline-flex min-h-[44px] items-center text-sm font-semibold text-brand-600">Ver detalle</Link>
+                <Link href={selectedReport.mine ? `/reportes/${selectedReport.id}` : `/reportes-comunidad/${selectedReport.id}`} className="mt-1 inline-flex min-h-[44px] items-center text-sm font-semibold text-brand-600">Ver detalle</Link>
               </div>
               <button aria-label="Cerrar" onClick={() => setSelectedReport(null)} className="-m-2 flex h-11 w-11 items-center justify-center"><X size={20} /></button>
             </div>
@@ -245,7 +245,7 @@ export function MapPlanner({ risk, reports, places, maxExtraMinutes, initialDest
         )}
       </div>
       <MapFilterSheet open={filterOpen} categories={cats} age={age} onChange={(c, a) => { setCats(c); setAge(a); }} onClose={() => setFilterOpen(false)} />
-  <ReportSheet open={reporting} onClose={() => setReporting(false)} locationLabel="Tu ubicación actual" />
+  <ReportSheet open={reporting} onClose={() => setReporting(false)} position={position} locationLabel="Tu ubicación actual" />
     </div>
   );
 }

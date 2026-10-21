@@ -76,8 +76,16 @@ export interface Report {
   status: ReportStatus;
   note?: string;
   pendingDetails?: boolean;
+  /** Personas que dijeron "sigue ahí" (incluye tu voto si lo diste). */
   confirmations: number;
   timeline: { status: ReportStatus; at: string; text: string }[];
+  /** Es un reporte tuyo. */
+  mine?: boolean;
+  /** Tu respuesta a "¿sigue ahí?" según el servidor. */
+  myVote?: "sigue" | "resuelto";
+  /** Detalles que ya completaste (gravedad, descripción, referencia y si tiene foto). */
+  completion?: ReportCompletion;
+  hasPhoto?: boolean;
 }
 
 export interface Ride {

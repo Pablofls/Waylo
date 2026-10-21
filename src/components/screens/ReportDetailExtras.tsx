@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Camera, Pencil } from "lucide-react";
 import { ConfirmSheet } from "@/components/domain/ConfirmSheet";
 import { Badge } from "@/components/ui/Badge";
@@ -12,19 +13,18 @@ const sev = { leve: "Leve", moderada: "Moderada", grave: "Grave" } as const;
 
 /** Bloque de detalle del reporte propio: aviso para completar o datos ya completados. */
 export function ReportDetailExtras({ report }: { report: Report }) {
-  const { completions, cancelledReports, cancelReport } = useSocial();
+  const router = useRouter();
+  const { cancelReport } = useSocial();
   const [confirm, setConfirm] = useState(false);
-  const c = completions[report.id];
+  const [error, setError] = useState("");
+  const c = report.completion;
   const pending = report.pendingDetails && !c;
-
-  if (cancelledReports.includes(report.id)) {
-    return <div role="status" className="rounded-card border border-line bg-canvas p-4 text-sm font-semibold text-muted">Cancelaste este reporte. Ya no se muestra a la comunidad ni al municipio.</div>;
-  }
   const cancellable = report.status !== "atendido";
   const cancelBlock = cancellable && (
     <>
+      {error && <p role="alert" className="mt-2 text-sm font-semibold text-risk-red">{error}</p>}
       <Button variant="ghost" className="mt-2 !text-[#B02E2E]" onClick={() => setConfirm(true)}>Cancelar reporte</Button>
-      <ConfirmSheet open={confirm} danger title="¿Cancelar este reporte?" text="Dejará de mostrarse a la comunidad y no se enviará al municipio." confirmLabel="Cancelar reporte" cancelLabel="Mantener" onConfirm={() => cancelReport(report.id)} onClose={() => setConfirm(false)} />
+      <ConfirmSheet open={confirm} danger title="¿Cancelar este reporte?" text="Dejará de mostrarse a la comunidad y no se enviará al municipio." confirmLabel="Cancelar reporte" cancelLabel="Mantener" onConfirm={() => cancelReport(report.id).then(() => router.replace("/reportes")).catch((e) => setError(e instanceof Error ? e.message : "No pudimos cancelar el reporte."))} onClose={() => setConfirm(false)} />
     </>
   );
 

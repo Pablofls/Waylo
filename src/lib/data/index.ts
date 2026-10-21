@@ -6,6 +6,7 @@ import { currentUserId } from "@/server/session";
 import { getUserById } from "@/server/cuenta";
 import { historialBusqueda, lugarVisible, lugaresGuardados, lugaresPublicos } from "@/server/lugares";
 import { navegacion, opcionPorId, rutasGuardadas, trayectoHabitual } from "@/server/rutas";
+import { misReportes, miReporte, misVotos, reportesComunidad, reporteVisible } from "@/server/reportes";
 import { puntosDeRiesgo } from "@/server/riesgo";
 import { estadisticaMes, misRodadas, miRodada, resumenRodada } from "@/server/rodadas";
 import { mockReports, communityReports } from "@/mocks/reports";
@@ -49,15 +50,22 @@ export const getRide = async (id: string) => miRodada(await sessionUserId(), id)
 export const getMonthStats = async () => estadisticaMes(await sessionUserId());
 export const getRideSummary = async (id: string) => resumenRodada(await sessionUserId(), id);
 
+export const getMyReports = async () => misReportes(await sessionUserId());
+export const getMyReport = async (id: string) => miReporte(await sessionUserId(), id);
+export const getCommunityReports = async () => reportesComunidad(await sessionUserId());
+export const getAnyReport = async (id: string) => reporteVisible(await sessionUserId(), id);
+export const getMyVotes = async () => misVotos(await sessionUserId());
+export async function getRecentReports() {
+  const uid = await sessionUserId();
+  const [mine, community] = await Promise.all([misReportes(uid), reportesComunidad(uid)]);
+  return [...mine, ...community];
+}
+
 export async function getUser() {
   const u = await getOptionalUser();
   if (!u) redirect("/api/auth/sesion-invalida");
   return u;
 }
-export const getMyReports = () => wait(mockReports);
-export const getMyReport = (id: string) => wait(mockReports.find((r) => r.id === id) ?? null);
-export const getCommunityReports = () => wait(communityReports);
-export const getRecentReports = () => wait([...mockReports, ...communityReports]);
 export const getGroupRides = () => wait(mockGroupRides);
 export const getBadges = () => wait({ badges: mockBadges, confirmedReports });
 export const getFriendActivity = () => wait(friendActivity);
@@ -66,7 +74,6 @@ export const getPeople = () => wait(people);
 export const getPerson = (id: string) => wait(people.find((p) => p.id === id) ?? null);
 export const getPersonActivity = (id: string) => wait(friendActivity.filter((a) => a.friendId === id));
 export const getNotifications = () => wait(notifications);
-export const getAnyReport = (id: string) => wait([...mockReports, ...communityReports].find((r) => r.id === id) ?? null);
 export const getEmergencyContacts = () => wait(emergencyContacts);
 export const getClubs = () => wait(clubs);
 export const getChallenges = () => wait(challenges);
