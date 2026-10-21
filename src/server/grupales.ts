@@ -108,9 +108,9 @@ async function validarLugarPublico(id: string) {
 async function escribirDetalle(c: import("pg").PoolClient, id: string, d: Input) {
   const vehiculos = d.vehiculo === "ambos" ? ["bicicleta", "scooter"] : [d.vehiculo];
   await c.query(`DELETE FROM rodada_grupal_vehiculo WHERE rodada_grupal_id = $1`, [id]);
-  await c.query(`INSERT INTO rodada_grupal_vehiculo (rodada_grupal_id, tipo_vehiculo_clave) SELECT $1, unnest($2::text[])`, [id, vehiculos]);
+  await c.query(`INSERT INTO rodada_grupal_vehiculo (rodada_grupal_id, tipo_vehiculo_clave) SELECT $1::uuid, unnest($2::text[])`, [id, vehiculos]);
   await c.query(`DELETE FROM rodada_grupal_regla WHERE rodada_grupal_id = $1`, [id]);
-  await c.query(`INSERT INTO rodada_grupal_regla (rodada_grupal_id, regla_clave) SELECT $1, clave FROM cat_regla_rodada WHERE nombre = ANY($2::text[])`, [id, d.reglas]);
+  await c.query(`INSERT INTO rodada_grupal_regla (rodada_grupal_id, regla_clave) SELECT $1::uuid, clave FROM cat_regla_rodada WHERE nombre = ANY($2::text[])`, [id, d.reglas]);
 }
 
 export async function crearRodadaGrupal(uid: string, d: Input): Promise<string> {

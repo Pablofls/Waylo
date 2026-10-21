@@ -102,7 +102,7 @@ export default function ConfiguracionPage() {
 
         <div className="px-4 pt-6">
           <button onClick={() => setConfirm("salir")} className="flex min-h-[56px] w-full items-center gap-3 font-semibold text-[#B02E2E]"><LogOut size={20} />Cerrar sesión</button>
-          <p className="pt-2 text-center text-xs text-muted">Waylo 0.1 · Fase de prototipo</p>
+          <p className="pt-2 text-center text-xs text-muted">Waylo 0.1</p>
         </div>
       </div>
 

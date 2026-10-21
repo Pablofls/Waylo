@@ -91,12 +91,12 @@ export async function guardarRutas(uid: string, d: RutasAjustes): Promise<void> 
         [uid, d.inclinacion, d.minutosExtra],
       );
       await c.query(`DELETE FROM preferencia_ruta_evitar WHERE usuario_id = $1`, [uid]);
-      await c.query(`INSERT INTO preferencia_ruta_evitar (usuario_id, evitar_clave) SELECT $1, unnest($2::text[])`, [uid, d.evitar]);
+      await c.query(`INSERT INTO preferencia_ruta_evitar (usuario_id, evitar_clave) SELECT $1::uuid, unnest($2::text[])`, [uid, d.evitar]);
       await c.query(`DELETE FROM preferencia_ruta_preferir WHERE usuario_id = $1`, [uid]);
       // "Rutas personalizadas" es Premium: sin suscripción activa no se guarda.
       const premium = await c.query(`SELECT 1 FROM v_suscripcion_actual WHERE usuario_id = $1 AND activa`, [uid]);
       const preferir = d.preferir.filter((p) => p !== "rutas_personalizadas" || (premium.rowCount ?? 0) > 0);
-      await c.query(`INSERT INTO preferencia_ruta_preferir (usuario_id, preferir_clave) SELECT $1, unnest($2::text[])`, [uid, preferir]);
+      await c.query(`INSERT INTO preferencia_ruta_preferir (usuario_id, preferir_clave) SELECT $1::uuid, unnest($2::text[])`, [uid, preferir]);
     });
   } catch (e) {
     if ((e as { code?: string }).code === "23503") throw new ApiError(400, "Alguna preferencia no es válida.");
@@ -117,7 +117,7 @@ export async function guardarPerfil(uid: string, d: z.infer<typeof perfilSchema>
     await tx(async (c) => {
       await c.query(`UPDATE usuario SET nombre = $2, municipio_clave = $3, bio = NULLIF($4, '') WHERE id = $1`, [uid, d.nombre, d.municipio, d.bio]);
       await c.query(`DELETE FROM usuario_vehiculo WHERE usuario_id = $1`, [uid]);
-      await c.query(`INSERT INTO usuario_vehiculo (usuario_id, tipo_vehiculo_clave) SELECT $1, unnest($2::text[])`, [uid, vehiculos]);
+      await c.query(`INSERT INTO usuario_vehiculo (usuario_id, tipo_vehiculo_clave) SELECT $1::uuid, unnest($2::text[])`, [uid, vehiculos]);
     });
   } catch (e) {
     if ((e as { code?: string }).code === "23503") throw new ApiError(400, "Ese municipio no es válido.");

@@ -62,7 +62,7 @@ export async function iniciarComparticion(uid: string, d: z.infer<typeof compart
   await detenerComparticion(uid);
   await tx(async (c) => {
     const r = await c.query<{ id: string }>(`INSERT INTO comparticion_ubicacion (usuario_id, expira_en) VALUES ($1, CASE WHEN $2::int IS NULL THEN NULL ELSE now() + make_interval(hours => $2) END) RETURNING id`, [uid, d.horas]);
-    await c.query(`INSERT INTO comparticion_destinatario (comparticion_id, destinatario_id) SELECT $1, unnest($2::uuid[])`, [r.rows[0].id, amigos.map((a) => a.amigo_id)]);
+    await c.query(`INSERT INTO comparticion_destinatario (comparticion_id, destinatario_id) SELECT $1::uuid, unnest($2::uuid[])`, [r.rows[0].id, amigos.map((a) => a.amigo_id)]);
   });
 }
 

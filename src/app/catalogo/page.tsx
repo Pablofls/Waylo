@@ -109,7 +109,7 @@ export default function Catalogo() {
     <main className="mx-auto max-w-xl px-4 pb-16 pt-10">
       <Logo size="md" />
       <h1 className="mt-4 text-2xl font-bold">Catálogo de pantallas</h1>
-      <p className="mt-1 text-muted">Todas las pantallas de la fase 1 con datos simulados.</p>
+      <p className="mt-1 text-muted">Índice de pantallas para desarrollo. No existe en producción.</p>
       {groups.map((g) => (
         <section key={g.title} className="mt-8">
           <h2 className="text-sm font-bold uppercase tracking-wide text-muted">{g.title}</h2>

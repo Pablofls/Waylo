@@ -64,20 +64,20 @@ export async function opcionPorId(uid: string, id: string): Promise<RouteOption 
 /** Maniobras (posición como fracción del trazo) y avisos de reportes cercanos al trayecto. */
 export async function navegacion(uid: string, opcionId: string): Promise<{ steps: NavStep[]; alerts: NavAlert[] }> {
   if (!(await opcionPorId(uid, opcionId))) throw notFound();
-  const steps = await query<{ at: number; giro: NavStep["turn"]; texto: string }>(
-    `SELECT ST_LineLocatePoint(o.trazo::geometry, m.punto::geometry) AS at, m.giro_clave AS giro, m.texto
+  const steps = await query<{ fraccion: number; giro: NavStep["turn"]; texto: string }>(
+    `SELECT ST_LineLocatePoint(o.trazo::geometry, m.punto::geometry) AS fraccion, m.giro_clave AS giro, m.texto
      FROM ruta_opcion_maniobra m JOIN ruta_opcion o ON o.id = m.opcion_id WHERE m.opcion_id = $1 ORDER BY m.orden`,
     [opcionId],
   );
-  const reps = await query<{ at: number; categoria: string; referencia: string | null; metros: number }>(
-    `SELECT ST_LineLocatePoint(o.trazo::geometry, r.geog::geometry) AS at, c.nombre AS categoria, r.referencia, ST_Distance(o.trazo, r.geog) AS metros
+  const reps = await query<{ fraccion: number; categoria: string; referencia: string | null; metros: number }>(
+    `SELECT ST_LineLocatePoint(o.trazo::geometry, r.geog::geometry) AS fraccion, c.nombre AS categoria, r.referencia, ST_Distance(o.trazo, r.geog) AS metros
      FROM ruta_opcion o JOIN reporte r ON ST_DWithin(o.trazo, r.geog, 80) JOIN cat_categoria_reporte c ON c.clave = r.categoria_clave
-     WHERE o.id = $1 AND r.cancelado_en IS NULL AND r.creado_en > now() - interval '30 days' ORDER BY at LIMIT 8`,
+     WHERE o.id = $1 AND r.cancelado_en IS NULL AND r.creado_en > now() - interval '30 days' ORDER BY fraccion LIMIT 8`,
     [opcionId],
   );
   return {
-    steps: steps.map((s) => ({ at: s.at, turn: s.giro, text: s.texto })),
-    alerts: reps.map((r) => ({ from: Math.max(0, r.at - 0.08), to: Math.min(1, r.at + 0.02), title: `${r.categoria} adelante`, text: r.referencia ?? "Reportado por la comunidad en tu ruta.", tone: "orange" as const })),
+    steps: steps.map((s) => ({ at: s.fraccion, turn: s.giro, text: s.texto })),
+    alerts: reps.map((r) => ({ from: Math.max(0, r.fraccion - 0.08), to: Math.min(1, r.fraccion + 0.02), title: `${r.categoria} adelante`, text: r.referencia ?? "Reportado por la comunidad en tu ruta.", tone: "orange" as const })),
   };
 }
 

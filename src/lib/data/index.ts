@@ -1,5 +1,4 @@
 // Capa de acceso a datos para páginas de servidor: toma la persona de la sesión y delega en src/server/*.
-// Lo que aún dice "mock" se migra por áreas (ver README).
 import "server-only";
 import { redirect } from "next/navigation";
 import { currentUserId } from "@/server/session";

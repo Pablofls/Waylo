@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 const COOKIE = "waylo_session";
 
 // Pantallas que se ven sin sesión. El resto exige la cookie (las rutas /api y los datos vuelven a validar la sesión).
-const PUBLIC = ["/login", "/registro", "/recuperar", "/sesion-vencida", "/sin-conexion", "/acerca-de", "/legal"];
+const PUBLIC = ["/login", "/registro", "/recuperar", "/sesion-vencida", "/sin-conexion", "/acerca-de", "/legal", "/design", "/catalogo"];
 // Con sesión no tiene caso volver a estas.
 const GUEST_ONLY = ["/", "/login", "/registro"];
 

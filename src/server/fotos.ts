@@ -5,7 +5,7 @@ import { ApiError } from "./api";
 
 export const MAX_FOTO_BYTES = 5 * 1024 * 1024;
 
-const dir = () => path.resolve(process.env.UPLOADS_DIR ?? "uploads");
+const dir = () => path.resolve(/* turbopackIgnore: true */ process.env.UPLOADS_DIR ?? "uploads");
 
 /** Detecta el tipo por los primeros bytes (no se confía en el tipo que declara el cliente). */
 export function tipoDeImagen(b: Buffer): { ext: "jpg" | "png" | "webp"; mime: string } | null {
@@ -22,7 +22,7 @@ export async function guardarImagen(bytes: Buffer): Promise<string> {
   if (!tipo) throw new ApiError(415, "Solo se aceptan fotos JPG, PNG o WebP.");
   await mkdir(dir(), { recursive: true });
   const nombre = `${randomBytes(16).toString("hex")}.${tipo.ext}`;
-  await writeFile(path.join(dir(), nombre), bytes, { mode: 0o640 });
+  await writeFile(path.join(/* turbopackIgnore: true */ dir(), nombre), bytes, { mode: 0o640 });
   return nombre;
 }
 
@@ -31,7 +31,7 @@ const NOMBRE_VALIDO = /^[0-9a-f]{32}\.(jpg|png|webp)$/;
 export async function leerImagen(nombre: string): Promise<{ bytes: Buffer; mime: string } | null> {
   if (!NOMBRE_VALIDO.test(nombre)) return null;
   try {
-    const bytes = await readFile(path.join(dir(), nombre));
+    const bytes = await readFile(path.join(/* turbopackIgnore: true */ dir(), nombre));
     return { bytes, mime: tipoDeImagen(bytes)?.mime ?? "application/octet-stream" };
   } catch {
     return null;
@@ -40,5 +40,5 @@ export async function leerImagen(nombre: string): Promise<{ bytes: Buffer; mime:
 
 export async function borrarImagen(nombre: string | null): Promise<void> {
   if (!nombre || !NOMBRE_VALIDO.test(nombre)) return;
-  await unlink(path.join(dir(), nombre)).catch(() => {});
+  await unlink(path.join(/* turbopackIgnore: true */ dir(), nombre)).catch(() => {});
 }

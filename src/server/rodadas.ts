@@ -43,7 +43,7 @@ async function rodadaEnCurso(uid: string, id: string) {
 export async function pausar(uid: string, id: string, pausar: boolean): Promise<void> {
   await rodadaEnCurso(uid, id);
   if (pausar) {
-    await query(`INSERT INTO rodada_pausa (rodada_id, pausada_en) SELECT $1, now() WHERE NOT EXISTS (SELECT 1 FROM rodada_pausa WHERE rodada_id = $1 AND reanudada_en IS NULL)`, [id]);
+    await query(`INSERT INTO rodada_pausa (rodada_id, pausada_en) SELECT $1::uuid, now() WHERE NOT EXISTS (SELECT 1 FROM rodada_pausa WHERE rodada_id = $1 AND reanudada_en IS NULL)`, [id]);
   } else {
     await query(`UPDATE rodada_pausa SET reanudada_en = now() WHERE rodada_id = $1 AND reanudada_en IS NULL AND now() > pausada_en`, [id]);
   }

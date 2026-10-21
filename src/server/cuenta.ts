@@ -55,7 +55,7 @@ export async function registrar(input: z.infer<typeof registroSchema>): Promise<
       const { rows } = await c.query<{ id: string }>(`INSERT INTO usuario (nombre, correo, uso_principal_clave) VALUES ($1, $2, $3) RETURNING id`, [input.nombre, input.correo, input.uso]);
       const uid = rows[0].id;
       await c.query(`INSERT INTO credencial (usuario_id, contrasena_hash) VALUES ($1, $2)`, [uid, hash]);
-      await c.query(`INSERT INTO usuario_vehiculo (usuario_id, tipo_vehiculo_clave) SELECT $1, unnest($2::text[])`, [uid, vehiculos]);
+      await c.query(`INSERT INTO usuario_vehiculo (usuario_id, tipo_vehiculo_clave) SELECT $1::uuid, unnest($2::text[])`, [uid, vehiculos]);
       await c.query(`INSERT INTO preferencia_ruta (usuario_id, inclinacion_segura, minutos_extra_max) VALUES ($1, $2, $3)`, [uid, input.inclinacion, input.minutosExtra]);
       await c.query(`INSERT INTO privacidad_usuario (usuario_id) VALUES ($1)`, [uid]);
       return uid;

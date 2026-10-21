@@ -41,7 +41,7 @@ export async function suscribir(uid: string, ultimos4: string): Promise<{ folio:
     // Si estaba cancelada pero vigente, la nueva suscripción empieza al terminar la anterior.
     const s = await c.query<{ id: string }>(
       `INSERT INTO suscripcion (usuario_id, plan_clave, inicia_en, vigente_hasta)
-       SELECT $1, $2, now(), GREATEST(now(), COALESCE((SELECT max(vigente_hasta) FROM suscripcion WHERE usuario_id = $1), now())) + make_interval(months => $3) RETURNING id`,
+       SELECT $1::uuid, $2::text, now(), GREATEST(now(), COALESCE((SELECT max(vigente_hasta) FROM suscripcion WHERE usuario_id = $1), now())) + make_interval(months => $3) RETURNING id`,
       [uid, p.clave, p.duracion_meses],
     );
     const f = folio();

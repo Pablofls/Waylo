@@ -65,6 +65,6 @@ export async function cerrarEmergencia(uid: string, id: string, resultado: "fals
   await tx(async (c) => {
     const r = await c.query(`UPDATE evento_emergencia SET cerrado_en = GREATEST(now(), ocurrido_en), resultado = $3 WHERE id = $1 AND usuario_id = $2 AND cerrado_en IS NULL RETURNING id`, [id, uid, resultado]);
     if (r.rowCount === 0) throw notFound();
-    if (resultado === "contactos_avisados") await c.query(`INSERT INTO evento_emergencia_aviso (evento_id, contacto_id) SELECT $1, id FROM contacto_emergencia WHERE usuario_id = $2 ON CONFLICT DO NOTHING`, [id, uid]);
+    if (resultado === "contactos_avisados") await c.query(`INSERT INTO evento_emergencia_aviso (evento_id, contacto_id) SELECT $1::uuid, id FROM contacto_emergencia WHERE usuario_id = $2 ON CONFLICT DO NOTHING`, [id, uid]);
   });
 }

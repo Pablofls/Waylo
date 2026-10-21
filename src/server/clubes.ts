@@ -85,7 +85,7 @@ export async function unirseClub(uid: string, id: string): Promise<"miembro" | "
   }
   const ya = await queryOne(`SELECT 1 FROM club_miembro WHERE club_id = $1 AND usuario_id = $2`, [id, uid]);
   if (ya) return "miembro";
-  await query(`INSERT INTO club_solicitud_ingreso (club_id, usuario_id) SELECT $1, $2 WHERE NOT EXISTS (SELECT 1 FROM club_solicitud_ingreso WHERE club_id = $1 AND usuario_id = $2 AND respondida_en IS NULL)`, [id, uid]);
+  await query(`INSERT INTO club_solicitud_ingreso (club_id, usuario_id) SELECT $1::uuid, $2::uuid WHERE NOT EXISTS (SELECT 1 FROM club_solicitud_ingreso WHERE club_id = $1 AND usuario_id = $2 AND respondida_en IS NULL)`, [id, uid]);
   return "solicitado";
 }
 
