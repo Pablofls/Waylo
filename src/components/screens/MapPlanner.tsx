@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { FeatureCollection, Point } from "geojson";
 import Link from "next/link";
 import { ArrowUpDown, Bookmark, BookmarkCheck, SlidersHorizontal, Siren, ChevronDown, ChevronUp, Circle, Clock, Layers, ListChecks, MapPin, Play, X } from "lucide-react";
@@ -15,6 +15,8 @@ import { RouteOptionCard } from "@/components/domain/RouteOptionCard";
 import { SafetyScoreBadge } from "@/components/domain/SafetyScoreBadge";
 import { Button } from "@/components/ui/Button";
 import { useSocial } from "@/lib/social";
+import { api } from "@/lib/api";
+import { MONTERREY_CENTER } from "@/lib/map/geo";
 import { useUserPosition } from "@/lib/geo/useUserPosition";
 import { categoryById } from "@/lib/report-categories";
 import { formatDateTime } from "@/lib/format";
@@ -23,8 +25,6 @@ import type { Place, Report, ReportCategory, RouteKind, RouteOption } from "@/ty
 interface Props {
   risk: FeatureCollection<Point>;
   reports: Report[];
-  routes: RouteOption[];
-  origin: Place;
   places: Place[];
   maxExtraMinutes: number;
   /** Destino preseleccionado (por ejemplo, el punto de salida de una rodada grupal). */
@@ -32,35 +32,51 @@ interface Props {
   initialRoute?: RouteKind;
 }
 
-const ME: Place = { name: "Mi ubicación", detail: "Cerca de la UDEM, San Pedro Garza García", coordinates: [-100.399, 25.654] };
+const ME: Place = { name: "Mi ubicación", detail: "", coordinates: MONTERREY_CENTER };
 
-export function MapPlanner({ risk, reports, routes, origin, places, maxExtraMinutes, initialDest, initialRoute }: Props) {
+export function MapPlanner({ risk, reports, places, maxExtraMinutes, initialDest, initialRoute }: Props) {
   const [heat, setHeat] = useState(true);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
-  const [from, setFrom] = useState<Place>({ ...ME, coordinates: origin.coordinates });
+  const [from, setFrom] = useState<Place>(ME);
+  const [routes, setRoutes] = useState<RouteOption[]>([]);
+  const [loadingRoutes, setLoadingRoutes] = useState(false);
   const [dest, setDest] = useState<Place | null>(initialDest ?? null);
   const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState("");
   const [picked, setPicked] = useState<RouteKind>(initialRoute ?? "segura");
   const [expanded, setExpanded] = useState(true);
-  const position = useUserPosition(origin.coordinates);
+  const position = useUserPosition(MONTERREY_CENTER);
   const { savedPlaces, savedRoutes, addSavedRoute, removeSavedRoute, searchHistory, addSearch, removeSearch, clearSearches } = useSocial();
   const [filterOpen, setFilterOpen] = useState(false);
   const [cats, setCats] = useState<ReportCategory[]>([]);
   const [age, setAge] = useState<ReportAge>("todo");
-  // La antigüedad se mide contra el reporte más reciente de los datos de ejemplo
-  const refTime = useMemo(() => Math.max(...reports.map((r) => new Date(r.createdAt).getTime())), [reports]);
+  const [refTime] = useState(() => Date.now());
   const maxAge = { todo: Infinity, "24h": 864e5, "7d": 7 * 864e5, "30d": 30 * 864e5 }[age];
   const shownReports = useMemo(() => reports.filter((r) => (cats.length === 0 || cats.includes(r.category)) && refTime - new Date(r.createdAt).getTime() <= maxAge), [reports, cats, maxAge, refTime]);
   const filtersOn = cats.length > 0 || age !== "todo";
   const [reporting, setReporting] = useState(false);
-  const saved = dest ? savedRoutes.find((r) => r.toName === dest.name && r.routeId === picked) : undefined;
   const frequent: Place[] = savedPlaces.length > 0 ? savedPlaces.map((sp) => ({ ...sp.place, name: sp.label })) : places.slice(0, 4);
 
-  const ordered = (["rapida", "segura", "equilibrada"] as RouteKind[]).map((id) => routes.find((r) => r.id === id)!);
-  const current = routes.find((r) => r.id === picked)!;
+  const ordered = (["rapida", "segura", "equilibrada"] as RouteKind[]).flatMap((id) => routes.find((r) => r.id === id) ?? []);
+  const current = routes.find((r) => r.id === picked) ?? routes[0];
+  const saved = dest && current ? savedRoutes.find((r) => r.toName === dest.name && r.routeId === current.id) : undefined;
   const recommended = routes.filter((r) => r.extraMinutes <= maxExtraMinutes).sort((a, b) => b.safetyScore - a.safetyScore)[0]?.id;
   const matches = useMemo(() => places.filter((p) => `${p.name} ${p.detail}`.toLowerCase().includes(query.trim().toLowerCase())), [places, query]);
+
+  // Opciones de ruta hacia el destino elegido (solo lugares con id; los puntos libres no tienen rutas calculadas).
+  useEffect(() => {
+    setRoutes([]);
+    if (!dest?.id) return;
+    let alive = true;
+    setLoadingRoutes(true);
+    api<{ opciones: RouteOption[] }>(`/api/rutas/opciones?destino=${dest.id}`)
+      .then((r) => alive && setRoutes(r.opciones))
+      .catch(() => alive && setRoutes([]))
+      .finally(() => alive && setLoadingRoutes(false));
+    return () => {
+      alive = false;
+    };
+  }, [dest?.id]);
 
   const choose = (p: Place) => {
     addSearch(p);
@@ -77,11 +93,11 @@ export function MapPlanner({ risk, reports, routes, origin, places, maxExtraMinu
 
   return (
     <div className="relative flex-1">
-      <MapView center={[-100.408, 25.6575]} zoom={13.2}>
+      <MapView center={MONTERREY_CENTER} zoom={12}>
         <HeatmapLayer data={risk} visible={heat} />
-        {dest &&
+        {dest && current &&
           routes.filter((r) => r.id !== picked).map((r) => <RouteLine key={`${r.id}-off`} id={`m-${r.id}`} coordinates={r.coordinates} color="#9AA3AD" width={4} opacity={0.8} />)}
-        {dest && <RouteLine key={`${picked}-on`} id={`m-${picked}`} coordinates={current.coordinates} risk={heat ? risk : undefined} fit fitPadding={{ top: 150, bottom: 330, left: 40, right: 40 }} />}
+        {dest && current && <RouteLine key={`${current.id}-on`} id={`m-${current.id}`} coordinates={current.coordinates} risk={heat ? risk : undefined} fit fitPadding={{ top: 150, bottom: 330, left: 40, right: 40 }} />}
         <ReportMarkers reports={shownReports} onSelect={setSelectedReport} />
         <UserMarker position={position} />
       </MapView>
@@ -172,7 +188,7 @@ export function MapPlanner({ risk, reports, routes, origin, places, maxExtraMinu
                 <p className="font-bold">{categoryById(selectedReport.category).label}</p>
                 <p className="truncate text-sm text-muted">{selectedReport.street}</p>
                 <p className="mt-1 text-xs text-muted">{formatDateTime(selectedReport.createdAt)} · {selectedReport.confirmations} confirmaciones</p>
-                <Link href={selectedReport.id.startsWith("r_") ? `/reportes/${selectedReport.id}` : `/reportes-comunidad/${selectedReport.id}`} className="mt-1 inline-flex min-h-[44px] items-center text-sm font-semibold text-brand-600">Ver detalle</Link>
+                <Link href={selectedReport.mine ? `/reportes/${selectedReport.id}` : `/reportes-comunidad/${selectedReport.id}`} className="mt-1 inline-flex min-h-[44px] items-center text-sm font-semibold text-brand-600">Ver detalle</Link>
               </div>
               <button aria-label="Cerrar" onClick={() => setSelectedReport(null)} className="-m-2 flex h-11 w-11 items-center justify-center"><X size={20} /></button>
             </div>
@@ -194,6 +210,12 @@ export function MapPlanner({ risk, reports, routes, origin, places, maxExtraMinu
           </div>
         ) : (
           <>
+            {!current ? (
+              <div className="rounded-card border border-line bg-white p-4 text-center">
+                <p className="font-bold">{loadingRoutes ? "Buscando rutas…" : "Aún no tenemos rutas para este destino"}</p>
+                {!loadingRoutes && <p className="mt-1 text-sm text-muted">Estamos sumando trayectos. Prueba con otro lugar de tu lista o revisa los reportes del mapa.</p>}
+              </div>
+            ) : (<>
             <button onClick={() => setExpanded(!expanded)} className="mx-auto flex h-8 w-full items-center justify-center text-muted" aria-label={expanded ? "Contraer opciones" : "Ver las 3 opciones"} aria-expanded={expanded}>
               {expanded ? <ChevronDown size={22} /> : <ChevronUp size={22} />}
             </button>
@@ -209,20 +231,21 @@ export function MapPlanner({ risk, reports, routes, origin, places, maxExtraMinu
               </div>
             )}
             <div className="mt-3 grid grid-cols-[1fr_48px_1fr] gap-2">
-              <Button href={`/rutas/${picked}`} variant="outline" icon={<ListChecks size={18} />}>Ver desglose</Button>
+              <Button href={`/rutas/${current.optionId}`} variant="outline" icon={<ListChecks size={18} />}>Ver desglose</Button>
               <button
                 aria-label={saved ? "Quitar ruta guardada" : "Guardar ruta"}
                 aria-pressed={Boolean(saved)}
-                onClick={() => (saved ? removeSavedRoute(saved.id) : addSavedRoute({ id: `sr_${Date.now()}`, name: `${from.name} a ${dest!.name}`, fromName: from.name, toName: dest!.name, destination: dest!.coordinates, routeId: picked, minutes: current.minutes, safetyScore: current.safetyScore }))}
+                onClick={() => (saved ? removeSavedRoute(saved.id) : addSavedRoute({ id: `sr_${Date.now()}`, name: `${from.name} a ${dest!.name}`, fromName: from.name, toName: dest!.name, destination: dest!.coordinates, routeId: current.id, minutes: current.minutes, safetyScore: current.safetyScore }, { ...from, coordinates: position }, dest!))}
                 className={`flex min-h-[48px] items-center justify-center rounded-xl border ${saved ? "border-brand-600 bg-brand-100 text-brand-700" : "border-line bg-white"}`}
               >{saved ? <BookmarkCheck size={20} /> : <Bookmark size={20} />}</button>
-              <Button href={`/rodada?ruta=${picked}`} icon={<Play size={18} fill="currentColor" />}>Iniciar</Button>
+              <Button href={`/rodada?ruta=${current.optionId}`} icon={<Play size={18} fill="currentColor" />}>Iniciar</Button>
             </div>
+          </>)}
           </>
         )}
       </div>
       <MapFilterSheet open={filterOpen} categories={cats} age={age} onChange={(c, a) => { setCats(c); setAge(a); }} onClose={() => setFilterOpen(false)} />
-  <ReportSheet open={reporting} onClose={() => setReporting(false)} locationLabel="Tu ubicación actual" />
+  <ReportSheet open={reporting} onClose={() => setReporting(false)} position={position} locationLabel="Tu ubicación actual" />
     </div>
   );
 }

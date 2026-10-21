@@ -38,11 +38,11 @@ export function GroupRideDetail({ id }: { id: string }) {
   const isOrganizer = ride.organizerId === me.id;
   const going = ride.attendeeIds.includes(me.id);
   const organizer = isOrganizer ? { name: me.name, city: me.city } : person(ride.organizerId);
-  const full = ride.capacity !== undefined && ride.attendeeIds.length >= ride.capacity;
+  const full = ride.capacity !== undefined && ride.attendeeCount >= ride.capacity;
   const cancelled = ride.status === "cancelada";
   const finished = ride.status === "finalizada";
   const active = !cancelled && !finished;
-  const dest = `/mapa?destino=${ride.meetingCoordinates.join(",")}&nombre=${encodeURIComponent(ride.meetingPoint)}`;
+  const dest = `/mapa?destino=${ride.meetingPlaceId ?? ride.meetingCoordinates.join(",")}&nombre=${encodeURIComponent(ride.meetingPoint)}`;
   const friendsGoing = attendees.filter((a) => !a.isMe && person(a.id)?.relation === "amigo").length;
 
   return (
@@ -114,7 +114,7 @@ export function GroupRideDetail({ id }: { id: string }) {
         <section className="px-4 pb-6 pt-6">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold">Quiénes van</h3>
-            <span className="flex items-center gap-1.5 text-sm text-muted"><Users size={16} />{ride.attendeeIds.length}{ride.capacity ? ` de ${ride.capacity}` : ""}</span>
+            <span className="flex items-center gap-1.5 text-sm text-muted"><Users size={16} />{ride.attendeeCount}{ride.capacity ? ` de ${ride.capacity}` : ""}</span>
           </div>
           <Link href={`/rodadas/${ride.id}/asistentes`} className="mt-3 flex min-h-[56px] items-center justify-between rounded-card border border-line px-4">
             <span>

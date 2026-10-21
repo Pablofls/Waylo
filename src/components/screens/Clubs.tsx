@@ -22,7 +22,7 @@ export function ClubsList() {
       <li>
         <Link href={`/clubes/${c.id}`} className="flex min-h-[72px] items-center gap-3 border-b border-line px-4 py-3">
           <Avatar name={c.name} size={48} />
-          <span className="min-w-0 flex-1"><span className="flex items-center gap-1.5 truncate text-[15px] font-semibold">{c.name}{c.privacy === "privado" && <Lock size={14} className="shrink-0 text-muted" />}</span><span className="block truncate text-sm text-muted">{c.zone} · {c.memberIds.length} miembros</span></span>
+          <span className="min-w-0 flex-1"><span className="flex items-center gap-1.5 truncate text-[15px] font-semibold">{c.name}{c.privacy === "privado" && <Lock size={14} className="shrink-0 text-muted" />}</span><span className="block truncate text-sm text-muted">{c.zone} · {c.memberCount} miembros</span></span>
         </Link>
       </li>
     );

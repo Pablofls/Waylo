@@ -13,17 +13,25 @@ import type { Vehicle } from "@/types";
 
 export default function EditarPerfilPage() {
   const router = useRouter();
-  const { me, updateMe } = useSocial();
+  const { me, saveProfile, municipalities } = useSocial();
   const [name, setName] = useState(me.name);
-  const [city, setCity] = useState(me.city);
+  const [city, setCity] = useState(municipalities.find((m) => m.nombre === me.city)?.clave ?? "");
+  const [busy, setBusy] = useState(false);
   const [bio, setBio] = useState(me.bio ?? "");
   const [vehicle, setVehicle] = useState<Vehicle>(me.vehicle);
   const [error, setError] = useState("");
 
-  const save = () => {
+  const save = async () => {
     if (name.trim().length < 2) return setError("Escribe tu nombre.");
-    updateMe({ name: name.trim(), city: city.trim(), bio: bio.trim(), vehicle });
-    router.push("/perfil");
+    setError("");
+    setBusy(true);
+    try {
+      await saveProfile({ name: name.trim(), municipality: city || null, bio: bio.trim(), vehicle });
+      router.push("/perfil");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No pudimos guardar tus cambios.");
+      setBusy(false);
+    }
   };
 
   return (
@@ -38,7 +46,13 @@ export default function EditarPerfilPage() {
           <Input label="Nombre" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
           {error && <p role="alert" className="mt-1 text-xs font-semibold text-risk-red">{error}</p>}
         </div>
-        <Input label="Ciudad" value={city} onChange={(e) => setCity(e.target.value)} />
+        <div>
+          <label htmlFor="municipio" className="mb-1.5 block text-sm font-semibold">Municipio</label>
+          <select id="municipio" value={city} onChange={(e) => setCity(e.target.value)} className="min-h-[52px] w-full rounded-xl border border-line bg-white px-4 text-base focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20">
+            <option value="">Sin especificar</option>
+            {municipalities.map((m) => <option key={m.clave} value={m.clave}>{m.nombre}</option>)}
+          </select>
+        </div>
         <div>
           <label htmlFor="bio" className="mb-1.5 block text-sm font-semibold">Sobre ti</label>
           <textarea id="bio" value={bio} onChange={(e) => setBio(e.target.value)} rows={3} maxLength={160} placeholder="Cuéntales a tus amigos cómo ruedas" className="w-full rounded-xl border border-line px-4 py-3 text-base placeholder:text-[#8A929C] focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20" />
@@ -51,7 +65,7 @@ export default function EditarPerfilPage() {
         <Input label="Correo electrónico" value={me.email} disabled hint="El correo no se puede cambiar por ahora." />
       </div>
       <div className="pb-safe border-t border-line bg-white px-4 pt-3">
-        <Button full size="lg" onClick={save}>Guardar cambios</Button>
+        <Button full size="lg" disabled={busy} onClick={() => void save()}>{busy ? "Guardando…" : "Guardar cambios"}</Button>
         <div className="h-3" />
       </div>
     </>

@@ -31,7 +31,13 @@ export default function PagoPage() {
     setErrors(e);
     if (Object.keys(e).length) return;
     setPaying(true);
-    setTimeout(() => { subscribe(); router.push("/premium/confirmacion"); }, 1200);
+    // Pago simulado: al servidor solo viajan los últimos 4 dígitos para el recibo; nunca el número completo ni el CVC.
+    subscribe(number.replace(/\s/g, "").slice(-4))
+      .then(({ folio }) => router.push(`/premium/confirmacion?folio=${encodeURIComponent(folio)}`))
+      .catch((err) => {
+        setErrors({ number: err instanceof Error ? err.message : "No pudimos registrar el pago." });
+        setPaying(false);
+      });
   };
 
   const err = (k: string) => errors[k] && <p role="alert" className="mt-1 text-xs font-semibold text-risk-red">{errors[k]}</p>;

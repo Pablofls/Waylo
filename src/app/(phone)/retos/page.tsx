@@ -1,6 +1,7 @@
 import { RetosScreen } from "@/components/screens/Retos";
-import { getChallenges } from "@/lib/data";
+import { getChallenges, getRanking } from "@/lib/data";
 
 export default async function RetosPage() {
-  return <RetosScreen challenges={await getChallenges()} />;
+  const [{ challenges }, ranking] = await Promise.all([getChallenges(), getRanking()]);
+  return <RetosScreen challenges={challenges} ranking={ranking} />;
 }

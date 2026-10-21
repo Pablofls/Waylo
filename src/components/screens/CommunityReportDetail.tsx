@@ -17,13 +17,14 @@ import type { Report } from "@/types";
 const tone = { enviado: "neutral", en_revision: "yellow", atendido: "brand" } as const;
 
 export function CommunityReportDetail({ report, mine }: { report: Report | null; mine: boolean }) {
-  const { confirmations, confirmReport } = useSocial();
+  const { confirmations, confirmReport, denounceReport } = useSocial();
   const [flagging, setFlagging] = useState(false);
   if (!report) return (<><ScreenHeader title="Reporte" back="/comunidad" /><EmptyState title="No encontramos este reporte" text="Puede que ya haya sido eliminado." /></>);
 
   const cat = categoryById(report.category);
   const vote = confirmations[report.id];
-  const count = report.confirmations + (vote === "sigue" ? 1 : 0);
+  // El conteo del servidor ya incluye tu voto guardado; se ajusta con el voto actual (optimista).
+  const count = report.confirmations - (report.myVote === "sigue" ? 1 : 0) + (vote === "sigue" ? 1 : 0);
 
   return (
     <>
@@ -34,6 +35,7 @@ export function CommunityReportDetail({ report, mine }: { report: Report | null;
           <Badge tone={tone[report.status]}>{statusLabels[report.status]}</Badge>
           <p className="flex items-start gap-2 text-[15px] font-semibold"><MapPin size={18} className="mt-0.5 shrink-0" />{report.street}{report.colonia ? `, ${report.colonia}` : ""}</p>
           <p className="text-sm text-muted">Reportado el {formatDateTime(report.createdAt)}</p>
+          {report.hasPhoto && /* eslint-disable-next-line @next/next/no-img-element */ <img src={`/api/reportes/${report.id}/foto`} alt="Foto del reporte" className="max-h-64 w-full rounded-xl object-cover" />}
           <p className="flex items-center gap-2 text-sm text-muted"><Users size={16} />{count} personas lo confirmaron</p>
 
           {!mine && (
@@ -55,7 +57,7 @@ export function CommunityReportDetail({ report, mine }: { report: Report | null;
           <a href="/ayuda/reglas-reportes" className="block text-sm font-semibold text-brand-600 underline">Reglas de reporte</a>
         </div>
       </div>
-      <ReportContentSheet open={flagging} title="Reportar contenido" reasons={["Información falsa", "Ya está atendido", "Repetido", "Ofensivo", "Otro"]} onClose={() => setFlagging(false)} />
+      <ReportContentSheet open={flagging} title="Reportar contenido" onSend={(motivo) => denounceReport(report.id, motivo)} onClose={() => setFlagging(false)} />
     </>
   );
 }

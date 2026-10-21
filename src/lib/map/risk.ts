@@ -67,3 +67,16 @@ export function riskGradient(coords: LngLat[], risk: FeatureCollection<Point>, s
   const stops = smooth.flatMap((r, i) => [i / (samples - 1), riskColor(r)]);
   return ["interpolate", ["linear"], ["line-progress"], ...stops];
 }
+
+/** Safety Score (40-97) de un recorrido libre a partir del riesgo promedio de los reportes cercanos a su traza. */
+export function scoreFromTrack(track: LngLat[], risk: FeatureCollection<Point>): number {
+  if (track.length === 0) return 70;
+  const step = Math.max(1, Math.floor(track.length / 200));
+  let sum = 0;
+  let n = 0;
+  for (let i = 0; i < track.length; i += step) {
+    sum += riskAt(track[i], risk);
+    n++;
+  }
+  return Math.round(Math.max(40, Math.min(97, 100 - (sum / n) * 70)));
+}

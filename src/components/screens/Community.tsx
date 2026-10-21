@@ -90,13 +90,13 @@ export function Community({ reports }: { reports: Report[] }) {
                         <p className="mt-2 flex items-center gap-2 text-sm"><MapPin size={16} className="shrink-0 text-muted" />{g.meetingPoint}</p>
                         <p className="mt-1 flex items-center gap-2 text-sm text-muted"><RouteIcon size={16} />{g.km} km · {isMine ? "Organizas tú" : nameOf(g.organizerId)}</p>
                         <div className="mt-3 flex items-center justify-between">
-                          <AttendeeStack names={g.attendeeIds.map(nameOf).filter(Boolean)} total={g.attendeeIds.length} size={28} />
+                          <AttendeeStack names={g.attendeeIds.map(nameOf).filter(Boolean)} total={g.attendeeCount} size={28} />
                           <ChevronRight size={18} className="text-muted" />
                         </div>
                       </Link>
                       {g.status === "programada" && !isMine && (
                         <div className="px-4 pb-4">
-                          {going ? <p className="text-sm font-semibold text-brand-700">Vas a asistir</p> : <Button full size="md" onClick={() => join(g.id)} disabled={g.capacity !== undefined && g.attendeeIds.length >= g.capacity}>Unirme</Button>}
+                          {going ? <p className="text-sm font-semibold text-brand-700">Vas a asistir</p> : <Button full size="md" onClick={() => join(g.id)} disabled={g.capacity !== undefined && g.attendeeCount >= g.capacity}>Unirme</Button>}
                         </div>
                       )}
                       {g.status !== "programada" || isMine ? <div className="h-2" /> : null}

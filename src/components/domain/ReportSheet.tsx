@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { Check, X } from "lucide-react";
 import { reportCategories, categoryById } from "@/lib/report-categories";
 import { Button } from "@/components/ui/Button";
-import type { ReportCategory } from "@/types";
+import { useSocial } from "@/lib/social";
+import type { LngLat, ReportCategory } from "@/types";
 
 interface Props {
   open: boolean;
@@ -12,10 +13,37 @@ interface Props {
   onSaved?: (c: ReportCategory) => void;
   /** Texto de ubicación mostrado en la hoja. */
   locationLabel?: string;
+  /** Dónde está la persona ([lng, lat]); si falta, se pide al GPS. */
+  position?: LngLat | null;
+  /** Rodada en curso a la que pertenece el reporte. */
+  rideId?: string | null;
 }
 
-export function ReportSheet({ open, onClose, onSaved, locationLabel = "Tu ubicación actual" }: Props) {
+export function ReportSheet({ open, onClose, onSaved, locationLabel = "Tu ubicación actual", position, rideId }: Props) {
+  const { createReport } = useSocial();
   const [saved, setSaved] = useState<ReportCategory | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const save = async (c: ReportCategory) => {
+    setError("");
+    setBusy(true);
+    try {
+      const at =
+        position ??
+        (await new Promise<LngLat>((resolve, reject) => {
+          if (!navigator.geolocation) return reject(new Error("Este dispositivo no tiene GPS."));
+          navigator.geolocation.getCurrentPosition((p) => resolve([p.coords.longitude, p.coords.latitude]), () => reject(new Error("Activa tu ubicación para reportar aquí.")), { enableHighAccuracy: true, timeout: 10000 });
+        }));
+      await createReport(c, at, rideId);
+      setSaved(c);
+      onSaved?.(c);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No pudimos guardar el reporte.");
+    } finally {
+      setBusy(false);
+    }
+  };
   const [later, setLater] = useState(false);
 
   useEffect(() => {
@@ -44,14 +72,13 @@ export function ReportSheet({ open, onClose, onSaved, locationLabel = "Tu ubicac
                 <X size={22} />
               </button>
             </div>
+            {error && <p role="alert" className="pb-2 text-sm font-semibold text-risk-red">{error}</p>}
             <div className="grid grid-cols-2 gap-2.5 pb-4">
               {reportCategories.map(({ id, label, icon: Icon }, i) => (
                 <button
                   key={id}
-                  onClick={() => {
-                    setSaved(id);
-                    onSaved?.(id);
-                  }}
+                  disabled={busy}
+                  onClick={() => void save(id)}
                   className={`flex min-h-[88px] flex-col items-start justify-between rounded-xl border border-line bg-white p-3 text-left active:bg-brand-100 ${i === reportCategories.length - 1 ? "col-span-2 min-h-[64px] flex-row items-center justify-start gap-3" : ""}`}
                 >
                   <Icon size={26} className="text-brand-600" />

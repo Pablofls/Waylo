@@ -10,21 +10,18 @@ interface Props {
   open: boolean;
   sharingWith: string[];
   etaLabel: string;
-  onStart: (names: string[]) => void;
+  onStart: (ids: string[]) => void;
   onStop: () => void;
   onClose: () => void;
 }
 
-/** Compartir el viaje en vivo con amigos o contactos de emergencia. */
+/** Compartir el viaje en vivo con amigos (solo ellos pueden ver tu posición en tiempo real). */
 export function ShareTripSheet({ open, sharingWith, etaLabel, onStart, onStop, onClose }: Props) {
-  const { friends, emergencyContacts } = useSocial();
+  const { friends } = useSocial();
   const [picked, setPicked] = useState<string[]>([]);
   if (!open) return null;
 
-  const options = [
-    ...emergencyContacts.map((c) => ({ id: c.id, name: c.name, detail: `${c.relation} · contacto de emergencia` })),
-    ...friends.map((f) => ({ id: f.id, name: f.name, detail: "Amigo en Waylo" })),
-  ];
+  const options = friends.map((f) => ({ id: f.id, name: f.name, detail: "Amigo en Waylo" }));
   const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   const sharing = sharingWith.length > 0;
 
@@ -43,6 +40,7 @@ export function ShareTripSheet({ open, sharingWith, etaLabel, onStart, onStop, o
           </>
         ) : (
           <>
+            {options.length === 0 && <p className="mt-3 text-sm text-muted">Agrega amigos para compartir tu viaje con ellos.</p>}
             <ul className="mt-3 divide-y divide-line rounded-card border border-line">
               {options.map((o) => {
                 const on = picked.includes(o.id);
@@ -57,7 +55,7 @@ export function ShareTripSheet({ open, sharingWith, etaLabel, onStart, onStop, o
                 );
               })}
             </ul>
-            <Button full size="lg" className="mt-4" disabled={picked.length === 0} onClick={() => { onStart(options.filter((o) => picked.includes(o.id)).map((o) => o.name.split(" ")[0])); onClose(); }}>
+            <Button full size="lg" className="mt-4" disabled={picked.length === 0} onClick={() => { onStart(picked); onClose(); }}>
               Compartir con {picked.length || ""} {picked.length === 1 ? "persona" : "personas"}
             </Button>
           </>

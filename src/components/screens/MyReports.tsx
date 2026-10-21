@@ -2,16 +2,13 @@
 
 import { useState } from "react";
 import { Inbox } from "lucide-react";
-import { useSocial } from "@/lib/social";
 import { Chip } from "@/components/ui/Chip";
 import { EmptyState } from "@/components/ui/States";
 import { ReportListItem } from "@/components/domain/ReportListItem";
 import { statusLabels } from "@/lib/report-categories";
 import type { Report, ReportStatus } from "@/types";
 
-export function MyReports({ reports: base }: { reports: Report[] }) {
-  const { completions, cancelledReports } = useSocial();
-  const reports = base.filter((r) => !cancelledReports.includes(r.id)).map((r) => (completions[r.id] ? { ...r, pendingDetails: false } : r));
+export function MyReports({ reports }: { reports: Report[] }) {
   const [filter, setFilter] = useState<ReportStatus | "todos">("todos");
   const shown = filter === "todos" ? reports : reports.filter((r) => r.status === filter);
   const options: { v: ReportStatus | "todos"; l: string }[] = [

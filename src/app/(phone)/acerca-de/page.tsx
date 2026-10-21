@@ -11,7 +11,7 @@ export default function AcercaDePage() {
         <div className="text-center">
           <Logo size="xl" />
           <p className="mt-2 font-display text-xl font-bold uppercase text-muted">Llega seguro</p>
-          <p className="mt-1 text-sm text-muted">Versión 0.1 · Prototipo</p>
+          <p className="mt-1 text-sm text-muted">Versión 0.1</p>
         </div>
         <p className="mt-6 text-[15px]">Waylo ayuda a quienes se mueven en bici o scooter en el Área Metropolitana de Monterrey a llegar seguros, con rutas calificadas por riesgo y reportes de la comunidad.</p>
         <p className="mt-3 text-[15px] text-muted">Proyecto universitario desarrollado en la Universidad de Monterrey (UDEM).</p>

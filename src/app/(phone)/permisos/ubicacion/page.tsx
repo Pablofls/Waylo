@@ -39,11 +39,11 @@ export default function PermisoUbicacionPage() {
 
         {status === "ok" && <p role="status" className="mt-6 flex items-center gap-2 rounded-xl bg-brand-100 p-4 text-sm font-semibold text-brand-700"><CheckCircle2 size={20} />Listo, ya tenemos acceso a tu ubicación.</p>}
         {status === "denied" && <p role="alert" className="mt-6 rounded-xl bg-[#F9E1E1] p-4 text-sm font-semibold text-[#B02E2E]">Sigue desactivada. Revisa los pasos de arriba y vuelve a intentar.</p>}
-        {status === "unavailable" && <p role="alert" className="mt-6 rounded-xl bg-[#F9E1E1] p-4 text-sm font-semibold text-[#B02E2E]">Este dispositivo no admite geolocalización. Puedes usar el modo simulación al comenzar.</p>}
+        {status === "unavailable" && <p role="alert" className="mt-6 rounded-xl bg-[#F9E1E1] p-4 text-sm font-semibold text-[#B02E2E]">Este dispositivo no admite geolocalización. Abre Waylo desde tu teléfono para grabar rodadas.</p>}
       </div>
       <div className="pb-safe space-y-2 border-t border-line bg-white px-4 pt-3">
         <Button full size="lg" onClick={retry}>Volver a intentar</Button>
-        <Button full variant="ghost" href="/rodada">Usar modo simulación</Button>
+        <Button full variant="ghost" href="/inicio">Volver al inicio</Button>
         <div className="h-1" />
       </div>
     </>

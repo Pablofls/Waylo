@@ -20,7 +20,7 @@ export default async function ReporteDetalle({ params }: { params: Promise<{ id:
 
   return (
     <>
-      <ScreenHeader title={cat.label} subtitle={`Reporte ${report.id.replace("r_", "#")}`} back="/reportes" />
+      <ScreenHeader title={cat.label} subtitle={`Reporte #${report.id.slice(0, 8)}`} back="/reportes" />
       <div className="flex-1 overflow-y-auto">
         <div className="relative h-[170px]">
           <MapView center={report.coordinates} zoom={15.5}>
@@ -33,6 +33,7 @@ export default async function ReporteDetalle({ params }: { params: Promise<{ id:
             <p className="mt-3 flex items-start gap-2 text-[15px] font-semibold"><MapPin size={18} className="mt-0.5 shrink-0" />{report.street}, {report.colonia}</p>
             <p className="mt-1 text-sm text-muted">Enviado el {formatDateTime(report.createdAt)}</p>
             {report.note && <p className="mt-3 rounded-lg bg-canvas p-3 text-sm">{report.note}</p>}
+            {report.hasPhoto && /* eslint-disable-next-line @next/next/no-img-element */ <img src={`/api/reportes/${report.id}/foto`} alt="Foto del reporte" className="mt-3 max-h-64 w-full rounded-xl object-cover" />}
             <p className="mt-3 flex items-center gap-2 text-sm text-muted"><Users size={16} />{report.confirmations} personas lo confirmaron</p>
           </div>
           <ReportDetailExtras report={report} />

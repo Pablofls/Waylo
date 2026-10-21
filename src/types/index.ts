@@ -6,7 +6,7 @@ export type MainUse = "transporte" | "recreativo";
 export interface User {
   id: string;
   name: string;
-  age: number;
+  age?: number;
   occupation: string;
   city: string;
   email: string;
@@ -34,6 +34,8 @@ export type RouteKind = "rapida" | "segura" | "equilibrada";
 
 export interface RouteOption {
   id: RouteKind;
+  /** Id de la opción en la base (para guardar la rodada y abrir el desglose). */
+  optionId?: string;
   label: string;
   minutes: number;
   km: number;
@@ -46,6 +48,8 @@ export interface RouteOption {
 }
 
 export interface Place {
+  /** Id del lugar en la base; los lugares escritos a mano no lo tienen. */
+  id?: string;
   name: string;
   detail: string;
   coordinates: LngLat;
@@ -72,8 +76,16 @@ export interface Report {
   status: ReportStatus;
   note?: string;
   pendingDetails?: boolean;
+  /** Personas que dijeron "sigue ahí" (incluye tu voto si lo diste). */
   confirmations: number;
   timeline: { status: ReportStatus; at: string; text: string }[];
+  /** Es un reporte tuyo. */
+  mine?: boolean;
+  /** Tu respuesta a "¿sigue ahí?" según el servidor. */
+  myVote?: "sigue" | "resuelto";
+  /** Detalles que ya completaste (gravedad, descripción, referencia y si tiene foto). */
+  completion?: ReportCompletion;
+  hasPhoto?: boolean;
 }
 
 export interface Ride {
@@ -110,6 +122,10 @@ export interface FriendActivity {
   safetyScore: number;
   at: string;
   vehicle: "bicicleta" | "scooter";
+  /** Reacciones totales (incluye la tuya) y comentarios. */
+  kudos?: number;
+  comments?: number;
+  gaveKudo?: boolean;
 }
 
 export interface CommunityRide {
@@ -122,6 +138,9 @@ export interface CommunityRide {
   safetyScore: number;
   at: string;
   zone: string;
+  kudos?: number;
+  comments?: number;
+  gaveKudo?: boolean;
 }
 
 export type Relation = "amigo" | "solicitud_recibida" | "solicitud_enviada" | "ninguna";
@@ -153,20 +172,24 @@ export interface GroupRide {
   /** ISO con offset de Monterrey, p. ej. 2026-10-24T20:00:00-06:00 */
   date: string;
   meetingPoint: string;
+  /** Id del lugar de salida (siempre un lugar público). */
+  meetingPlaceId?: string;
   meetingCoordinates: LngLat;
   level: RideLevel;
   pace: RidePace;
   vehicle: Vehicle;
   km: number;
   organizerId: string;
+  /** Asistentes cuyo perfil puedes ver (puede haber más: usa `attendeeCount`). */
   attendeeIds: string[];
+  attendeeCount: number;
   capacity?: number;
   privacy: RidePrivacy;
   rules: string[];
   status: "programada" | "cancelada" | "finalizada";
 }
 
-export type RideDraft = Omit<GroupRide, "id" | "organizerId" | "attendeeIds" | "status">;
+export type RideDraft = Omit<GroupRide, "id" | "organizerId" | "attendeeIds" | "attendeeCount" | "status">;
 
 export interface SavedPlace {
   id: string;
@@ -200,6 +223,8 @@ export interface SavedRoute {
   fromName: string;
   toName: string;
   destination: LngLat;
+  /** Id del lugar de destino (para abrir sus rutas en el mapa). */
+  destinationId?: string;
   routeId: RouteKind;
   minutes: number;
   safetyScore: number;
@@ -217,6 +242,8 @@ export interface Subscription {
   /** Fecha de fin cuando ya se canceló pero sigue vigente. */
   until?: string;
   cancelled?: boolean;
+  /** Últimos 4 dígitos de la tarjeta del último pago. */
+  last4?: string;
 }
 
 export interface Club {
@@ -226,8 +253,12 @@ export interface Club {
   zone: string;
   privacy: "publico" | "privado";
   ownerId: string;
+  /** Miembros cuyo perfil puedes ver (en clubes privados, solo si eres miembro). */
   memberIds: string[];
+  memberCount: number;
   rideIds: string[];
+  /** Ya enviaste tu solicitud de ingreso (club privado). */
+  requested?: boolean;
 }
 
 export interface Challenge {
@@ -265,4 +296,22 @@ export interface Zone {
   /** Riesgo 0-100 por franja horaria. */
   hourly: { label: string; risk: number }[];
   summary: string;
+}
+
+// Navegación guiada ----------------------------------------------------------------
+export type TurnType = "recto" | "izquierda" | "derecha" | "llegada";
+
+export interface NavStep {
+  /** Fracción del recorrido (0-1) donde ocurre la maniobra. */
+  at: number;
+  turn: TurnType;
+  text: string;
+}
+
+export interface NavAlert {
+  from: number;
+  to: number;
+  title: string;
+  text: string;
+  tone: "orange" | "red";
 }

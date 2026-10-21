@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link2, Search, UserPlus } from "lucide-react";
 import { PersonRow } from "@/components/domain/PersonRow";
 import { RelationButton } from "@/components/domain/RelationButton";
@@ -8,6 +8,7 @@ import { ShareSheet } from "@/components/domain/ShareSheet";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/States";
 import { useSocial } from "@/lib/social";
+import { api } from "@/lib/api";
 import type { Person } from "@/types";
 
 type Tab = "amigos" | "solicitudes" | "agregar";
@@ -21,12 +22,14 @@ function SearchBox({ value, onChange, placeholder }: { value: string; onChange: 
   );
 }
 
-const match = (p: Person, q: string) => `${p.name} ${p.city} ${p.email}`.toLowerCase().includes(q.trim().toLowerCase());
+const match = (p: Person, q: string) => `${p.name} ${p.city}`.toLowerCase().includes(q.trim().toLowerCase());
 const detail = (p: Person) => `${p.city} · ${p.mutual} en común`;
 
 export function Friends() {
-  const { people: allPeople, friends, received, sent, blocked } = useSocial();
-  const people = allPeople.filter((p) => !blocked.includes(p.id));
+  const { friends, received, sent, suggestions, person } = useSocial();
+  const [found, setFound] = useState<Person[]>([]);
+  const [origin, setOrigin] = useState("");
+  useEffect(() => setOrigin(window.location.origin), []);
   const [tab, setTab] = useState<Tab>("amigos");
   const [qFriends, setQFriends] = useState("");
   const [qAll, setQAll] = useState("");
@@ -37,9 +40,23 @@ export function Friends() {
     { v: "solicitudes", l: `Solicitudes${received.length ? ` (${received.length})` : ""}` },
     { v: "agregar", l: "Buscar" },
   ];
-  const searching = qAll.trim().length > 0;
-  const results = people.filter((p) => match(p, qAll));
-  const suggestions = people.filter((p) => p.relation === "ninguna").sort((a, b) => b.mutual - a.mutual).slice(0, 5);
+  const searching = qAll.trim().length >= 2;
+  // La búsqueda es en el servidor (nombre o correo exacto): no se descarga un directorio de personas.
+  useEffect(() => {
+    const q = qAll.trim();
+    if (q.length < 2) return setFound([]);
+    let alive = true;
+    const t = setTimeout(() => {
+      api<{ personas: Person[] }>(`/api/personas?q=${encodeURIComponent(q)}`)
+        .then((r) => alive && setFound(r.personas))
+        .catch(() => alive && setFound([]));
+    }, 300);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+  }, [qAll]);
+  const results = found.map((p) => person(p.id) ?? p);
   const myFriends = friends.filter((p) => match(p, qFriends));
 
   return (
@@ -87,7 +104,7 @@ export function Friends() {
         {tab === "agregar" && (
           <>
             <div className="space-y-3 p-4">
-              <SearchBox value={qAll} onChange={setQAll} placeholder="Nombre, ciudad o correo" />
+              <SearchBox value={qAll} onChange={setQAll} placeholder="Nombre o correo exacto" />
               <Button variant="secondary" full icon={<Link2 size={18} />} onClick={() => setShare(true)}>Invitar con un enlace</Button>
             </div>
             <h2 className="px-4 pb-1 text-sm font-bold uppercase tracking-wide text-muted">{searching ? `Resultados (${results.length})` : "Personas que quizá conoces"}</h2>
@@ -100,7 +117,7 @@ export function Friends() {
         )}
       </div>
 
-      <ShareSheet open={share} onClose={() => setShare(false)} title="Invita a tus amigos" text="Quien abra el enlace podrá crear su cuenta y agregarte." url="https://waylo.app/invitar/daniela-garza" />
+      <ShareSheet open={share} onClose={() => setShare(false)} title="Invita a tus amigos" text="Quien abra el enlace podrá crear su cuenta y agregarte." url={`${origin}/registro`} />
     </>
   );
 }

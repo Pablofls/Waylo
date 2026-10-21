@@ -20,23 +20,32 @@ const severities: { v: ReportCompletion["severity"]; l: string }[] = [
 
 export function CompleteReport({ report }: { report: Report | null }) {
   const router = useRouter();
-  const { completeReport, completions } = useSocial();
-  const done = report ? completions[report.id] : undefined;
+  const { completeReport } = useSocial();
+  const done = report?.completion;
   const [severity, setSeverity] = useState<ReportCompletion["severity"]>(done?.severity ?? "moderada");
   const [note, setNote] = useState(done?.note ?? report?.note ?? "");
   const [street, setStreet] = useState(done?.street ?? report?.street ?? "");
-  const [photo, setPhoto] = useState<string | null>(done?.hasPhoto ? "foto.jpg" : null);
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [keepPhoto, setKeepPhoto] = useState(Boolean(done?.hasPhoto));
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   if (!report) return (<><ScreenHeader title="Completar reporte" back="/reportes" /><EmptyState title="No encontramos este reporte" text="Puede que haya sido eliminado." /></>);
   const cat = categoryById(report.category);
 
-  const save = () => {
+  const save = async () => {
     if (note.trim().length < 10) return setError("Describe lo que viste en al menos 10 caracteres.");
     if (street.trim().length < 3) return setError("Indica la calle o referencia.");
-    completeReport(report.id, { severity, note: note.trim(), street: street.trim(), hasPhoto: photo !== null });
-    router.push(`/reportes/${report.id}`);
+    setError("");
+    setBusy(true);
+    try {
+      await completeReport(report.id, { severity, note: note.trim(), street: street.trim() }, photo ?? (!keepPhoto && done?.hasPhoto ? "quitar" : null));
+      router.push(`/reportes/${report.id}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No pudimos guardar el reporte.");
+      setBusy(false);
+    }
   };
 
   return (
@@ -60,12 +69,12 @@ export function CompleteReport({ report }: { report: Report | null }) {
 
         <div>
           <p className="mb-1.5 text-sm font-semibold">Foto</p>
-          <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => setPhoto(e.target.files?.[0]?.name ?? null)} />
-          {photo ? (
+          <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { setPhoto(e.target.files?.[0] ?? null); setKeepPhoto(false); }} />
+          {photo || keepPhoto ? (
             <div className="flex min-h-[56px] items-center gap-3 rounded-xl border border-line px-4">
               <Camera size={20} className="text-brand-600" />
-              <span className="min-w-0 flex-1 truncate text-sm font-semibold">{photo}</span>
-              <button aria-label="Quitar foto" onClick={() => setPhoto(null)} className="-mr-3 flex h-11 w-11 items-center justify-center"><X size={18} /></button>
+              <span className="min-w-0 flex-1 truncate text-sm font-semibold">{photo ? photo.name : "Foto guardada"}</span>
+              <button aria-label="Quitar foto" onClick={() => { setPhoto(null); setKeepPhoto(false); }} className="-mr-3 flex h-11 w-11 items-center justify-center"><X size={18} /></button>
             </div>
           ) : (
             <Button variant="outline" full icon={<Camera size={20} />} onClick={() => fileRef.current?.click()}>Agregar foto</Button>
@@ -75,7 +84,7 @@ export function CompleteReport({ report }: { report: Report | null }) {
         {error && <p role="alert" className="text-sm font-semibold text-risk-red">{error}</p>}
       </div>
       <div className="pb-safe border-t border-line bg-white px-4 pt-3">
-        <Button full size="lg" onClick={save}>Guardar y enviar al municipio</Button>
+        <Button full size="lg" disabled={busy} onClick={() => void save()}>{busy ? "Guardando…" : "Guardar y enviar al municipio"}</Button>
         <div className="h-3" />
       </div>
     </>

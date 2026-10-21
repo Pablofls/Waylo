@@ -12,17 +12,25 @@ import { useSocial } from "@/lib/social";
 
 export default function PreferenciasRutaPage() {
   const router = useRouter();
-  const { me, updateMe, subscription } = useSocial();
-  const [pref, setPref] = useState(me.routePreference);
-  const [extra, setExtra] = useState(me.maxExtraMinutes);
-  const [avoidRisk, setAvoidRisk] = useState(true);
-  const [avoidDark, setAvoidDark] = useState(true);
-  const [avoidFast, setAvoidFast] = useState(false);
-  const [bikeLane, setBikeLane] = useState(true);
+  const { settings, saveRoutePrefs, subscription } = useSocial();
+  const [pref, setPref] = useState(settings.rutas.inclinacion);
+  const [extra, setExtra] = useState(settings.rutas.minutosExtra);
+  const [avoidRisk, setAvoidRisk] = useState(settings.rutas.evitar.includes("zonas_riesgo_alto"));
+  const [avoidDark, setAvoidDark] = useState(settings.rutas.evitar.includes("calles_sin_iluminacion"));
+  const [avoidFast, setAvoidFast] = useState(settings.rutas.evitar.includes("vias_rapidas_sin_ciclovia"));
+  const [bikeLane, setBikeLane] = useState(settings.rutas.preferir.includes("ciclovias_confinadas"));
   const [gate, setGate] = useState(false);
 
   const text = pref < 34 ? "Prioriza llegar rápido, aunque pases por calles con más riesgo." : pref < 67 ? "Equilibra tiempo y seguridad en cada trayecto." : "Prioriza ciclovías y calles tranquilas, aunque tardes más.";
-  const save = () => { updateMe({ routePreference: pref, maxExtraMinutes: extra }); router.push("/configuracion"); };
+  const save = () => {
+    saveRoutePrefs({
+      inclinacion: pref,
+      minutosExtra: extra,
+      evitar: [avoidRisk && "zonas_riesgo_alto", avoidDark && "calles_sin_iluminacion", avoidFast && "vias_rapidas_sin_ciclovia"].filter((x): x is string => Boolean(x)),
+      preferir: [bikeLane && "ciclovias_confinadas", ...settings.rutas.preferir.filter((p) => p === "rutas_personalizadas")].filter((x): x is string => Boolean(x)),
+    });
+    router.push("/configuracion");
+  };
 
   const Row = ({ label, hint, checked, onChange }: { label: string; hint: string; checked: boolean; onChange: (v: boolean) => void }) => (
     <div className="flex min-h-[60px] items-center justify-between gap-3 pl-4"><span><span className="block text-[15px] font-semibold">{label}</span><span className="block text-xs text-muted">{hint}</span></span><Toggle label={label} checked={checked} onChange={onChange} /></div>

@@ -1,24 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Check, Eye, MapPin } from "lucide-react";
+import { Check, MapPin, Radio } from "lucide-react";
 import { ScreenHeader } from "@/components/layout/ScreenHeader";
 import { Avatar } from "@/components/domain/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { useSocial } from "@/lib/social";
+import { api } from "@/lib/api";
 
 const durations: { v: number | null; l: string }[] = [{ v: 1, l: "1 hora" }, { v: 4, l: "4 horas" }, { v: null, l: "Hasta que la detenga" }];
 
 export default function CompartirUbicacionPage() {
-  const { friends, emergencyContacts, liveShare, startLiveShare, stopLiveShare } = useSocial();
+  const { friends, liveShare, startLiveShare, stopLiveShare } = useSocial();
+  const [sharers, setSharers] = useState<{ id: string; name: string }[]>([]);
+  useEffect(() => {
+    api<{ comparten: { id: string; name: string }[] }>("/api/comparticion").then((r) => setSharers(r.comparten)).catch(() => {});
+  }, []);
   const [picked, setPicked] = useState<string[]>([]);
   const [hours, setHours] = useState<number | null>(1);
-  const options = [
-    ...emergencyContacts.map((c) => ({ id: c.id, name: c.name, detail: `${c.relation} · contacto de emergencia` })),
-    ...friends.map((f) => ({ id: f.id, name: f.name, detail: "Amigo en Waylo" })),
-  ];
+  const options = friends.map((f) => ({ id: f.id, name: f.name, detail: "Amigo en Waylo" }));
   const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 
   return (
@@ -31,16 +33,15 @@ export default function CompartirUbicacionPage() {
               <p className="flex items-center gap-2 font-bold text-brand-700"><MapPin size={20} />Compartiendo tu ubicación</p>
               <p className="mt-1 text-sm text-brand-900">Con {liveShare.with.join(", ")} · {liveShare.hours ? `durante ${liveShare.hours} ${liveShare.hours === 1 ? "hora" : "horas"}` : "hasta que la detengas"}.</p>
             </div>
-            <Link href="/seguimiento/demo" className="mt-3 flex min-h-[56px] items-center gap-3 rounded-card border border-line px-4 font-semibold"><Eye size={20} />Ver lo que ven tus contactos</Link>
             <Button full variant="danger" className="mt-3" onClick={stopLiveShare}>Dejar de compartir</Button>
           </div>
         ) : (
           <>
-            <p className="text-[15px] text-muted">Las personas que elijas verán dónde estás en tiempo real, aunque no estés grabando una rodada. Puedes detenerlo cuando quieras.</p>
+            <p className="text-[15px] text-muted">Tus amigos elegidos verán dónde estás en tiempo real mientras grabas una rodada. Puedes detenerlo cuando quieras.</p>
             <h2 className="mt-5 text-sm font-bold uppercase tracking-wide text-muted">Duración</h2>
             <div className="mt-2 flex flex-wrap gap-2">{durations.map((d) => <Chip key={d.l} selected={hours === d.v} onClick={() => setHours(d.v)}>{d.l}</Chip>)}</div>
             <h2 className="mt-5 text-sm font-bold uppercase tracking-wide text-muted">Con quién</h2>
-            {options.length === 0 ? <p className="mt-2 text-sm text-muted">Agrega amigos o contactos de emergencia para compartir tu ubicación.</p> : (
+            {options.length === 0 ? <p className="mt-2 text-sm text-muted">Agrega amigos para compartir tu ubicación con ellos.</p> : (
               <ul className="mt-2 divide-y divide-line rounded-card border border-line">
                 {options.map((o) => {
                   const on = picked.includes(o.id);
@@ -56,8 +57,24 @@ export default function CompartirUbicacionPage() {
                 })}
               </ul>
             )}
-            <Button full size="lg" className="mt-5" disabled={picked.length === 0} onClick={() => startLiveShare(options.filter((o) => picked.includes(o.id)).map((o) => o.name.split(" ")[0]), hours)}>Empezar a compartir</Button>
+            <Button full size="lg" className="mt-5" disabled={picked.length === 0} onClick={() => startLiveShare(picked, hours)}>Empezar a compartir</Button>
           </>
+        )}
+        {sharers.length > 0 && (
+          <section className="mt-8">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Comparten contigo</h2>
+            <ul className="mt-2 divide-y divide-line rounded-card border border-line">
+              {sharers.map((p) => (
+                <li key={p.id}>
+                  <Link href={`/seguimiento/${p.id}`} className="flex min-h-[60px] items-center gap-3 px-3">
+                    <Avatar name={p.name} size={40} />
+                    <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">{p.name}</span>
+                    <span className="flex items-center gap-1 text-sm font-semibold text-brand-600"><Radio size={16} />Ver en vivo</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
       </div>
     </>

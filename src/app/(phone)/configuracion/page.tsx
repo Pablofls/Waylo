@@ -9,6 +9,8 @@ import { ConfirmSheet } from "@/components/domain/ConfirmSheet";
 import { Segmented } from "@/components/ui/Segmented";
 import { Toggle } from "@/components/ui/Toggle";
 import { useSocial } from "@/lib/social";
+import { Input } from "@/components/ui/Input";
+import { api, errorText } from "@/lib/api";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -32,13 +34,10 @@ function LinkRow({ href, icon, label, detail }: { href: string; icon: React.Reac
 
 export default function ConfiguracionPage() {
   const router = useRouter();
-  const { me, subscription } = useSocial();
-  const [units, setUnits] = useState<"km" | "mi">("km");
-  const [visibility, setVisibility] = useState<"todos" | "amigos" | "yo">("amigos");
-  const [profilePublic, setProfilePublic] = useState(true);
-  const [anonymousReports, setAnonymousReports] = useState(false);
+  const { me, subscription, settings, savePrivacy } = useSocial();
+  const privacy = settings.privacidad;
+  const [delPass, setDelPass] = useState("");
   const [confirm, setConfirm] = useState<"salir" | "eliminar" | null>(null);
-  const [exported, setExported] = useState(false);
 
   return (
     <>
@@ -65,23 +64,18 @@ export default function ConfiguracionPage() {
         </Section>
 
         <section className="px-4 pt-6">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Unidades</h2>
-          <div className="mt-2"><Segmented label="Unidades" value={units} onChange={setUnits} options={[{ value: "km", label: "Kilómetros" }, { value: "mi", label: "Millas" }]} /></div>
-        </section>
-
-        <section className="px-4 pt-6">
           <h2 className="text-sm font-bold uppercase tracking-wide text-muted">Quién ve mis rodadas</h2>
-          <div className="mt-2"><Segmented label="Visibilidad de mis rodadas" value={visibility} onChange={setVisibility} options={[{ value: "todos", label: "Todos" }, { value: "amigos", label: "Amigos" }, { value: "yo", label: "Solo yo" }]} /></div>
+          <div className="mt-2"><Segmented label="Visibilidad de mis rodadas" value={privacy.visibilidadRodadas} onChange={(v) => savePrivacy({ ...privacy, visibilidadRodadas: v })} options={[{ value: "todos", label: "Todos" }, { value: "amigos", label: "Amigos" }, { value: "yo", label: "Solo yo" }]} /></div>
         </section>
 
         <Section title="Privacidad">
           <div className="flex min-h-[56px] items-center justify-between gap-3 pl-4">
             <span><span className="block text-[15px] font-semibold">Perfil visible</span><span className="block text-xs text-muted">Otras personas pueden encontrarte en la búsqueda</span></span>
-            <Toggle label="Perfil visible" checked={profilePublic} onChange={setProfilePublic} />
+            <Toggle label="Perfil visible" checked={privacy.perfilVisible} onChange={(v) => savePrivacy({ ...privacy, perfilVisible: v })} />
           </div>
           <div className="flex min-h-[56px] items-center justify-between gap-3 pl-4">
             <span><span className="block text-[15px] font-semibold">Reportes anónimos</span><span className="block text-xs text-muted">Ocultar tu nombre en reportes de la comunidad</span></span>
-            <Toggle label="Reportes anónimos" checked={anonymousReports} onChange={setAnonymousReports} />
+            <Toggle label="Reportes anónimos" checked={privacy.reportesAnonimos} onChange={(v) => savePrivacy({ ...privacy, reportesAnonimos: v })} />
           </div>
           <LinkRow href="/permisos/ubicacion" icon={<LocateFixed size={20} />} label="Permiso de ubicación" />
           <LinkRow href="/configuracion/bloqueados" icon={<ShieldOff size={20} />} label="Usuarios bloqueados" />
@@ -97,10 +91,10 @@ export default function ConfiguracionPage() {
         </Section>
 
         <Section title="Tus datos">
-          <button onClick={() => setExported(true)} className="flex min-h-[56px] w-full items-center gap-3 px-4 text-left">
+          <a href="/api/cuenta/exportar" download className="flex min-h-[56px] w-full items-center gap-3 px-4 text-left">
             <Download size={20} className="text-muted" />
-            <span className="flex-1"><span className="block text-[15px] font-semibold">Descargar mis datos</span>{exported && <span className="block text-xs text-brand-700">Te enviaremos un archivo a {me.email}</span>}</span>
-          </button>
+            <span className="flex-1"><span className="block text-[15px] font-semibold">Descargar mis datos</span><span className="block text-xs text-muted">Un archivo con tu perfil, rodadas y reportes</span></span>
+          </a>
           <button onClick={() => setConfirm("eliminar")} className="flex min-h-[56px] w-full items-center gap-3 px-4 text-left text-risk-red">
             <Trash2 size={20} /><span className="text-[15px] font-semibold text-[#B02E2E]">Eliminar mi cuenta</span>
           </button>
@@ -108,12 +102,14 @@ export default function ConfiguracionPage() {
 
         <div className="px-4 pt-6">
           <button onClick={() => setConfirm("salir")} className="flex min-h-[56px] w-full items-center gap-3 font-semibold text-[#B02E2E]"><LogOut size={20} />Cerrar sesión</button>
-          <p className="pt-2 text-center text-xs text-muted">Waylo 0.1 · Fase de prototipo</p>
+          <p className="pt-2 text-center text-xs text-muted">Waylo 0.1</p>
         </div>
       </div>
 
-      <ConfirmSheet open={confirm === "salir"} title="¿Cerrar sesión?" text="Podrás volver a entrar con tu correo y contraseña." confirmLabel="Cerrar sesión" onConfirm={() => router.push("/login")} onClose={() => setConfirm(null)} />
-      <ConfirmSheet open={confirm === "eliminar"} danger title="¿Eliminar tu cuenta?" text="Se borrarán tus rodadas, reportes y amistades. Esta acción no se puede deshacer." confirmLabel="Eliminar cuenta" onConfirm={() => router.push("/")} onClose={() => setConfirm(null)} />
+      <ConfirmSheet open={confirm === "salir"} title="¿Cerrar sesión?" text="Podrás volver a entrar con tu correo y contraseña." confirmLabel="Cerrar sesión" onConfirm={() => { api("/api/auth/logout", "POST").finally(() => { router.replace("/login"); router.refresh(); }); }} onClose={() => setConfirm(null)} />
+      <ConfirmSheet open={confirm === "eliminar"} danger title="¿Eliminar tu cuenta?" text="Se borrarán tus rodadas, reportes y amistades. Esta acción no se puede deshacer." confirmLabel="Eliminar cuenta" confirmDisabled={!delPass} onConfirm={() => { api("/api/auth/cuenta", "DELETE", { contrasena: delPass }).then(() => { router.replace("/"); router.refresh(); }).catch((e) => alert(errorText(e))); setDelPass(""); }} onClose={() => { setDelPass(""); setConfirm(null); }}>
+        <Input className="mt-3" label="Confirma con tu contraseña" type="password" autoComplete="current-password" value={delPass} onChange={(e) => setDelPass(e.target.value)} />
+      </ConfirmSheet>
     </>
   );
 }

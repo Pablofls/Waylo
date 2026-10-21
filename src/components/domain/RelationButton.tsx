@@ -16,7 +16,7 @@ export function RelationButton({ person, size = "row" }: { person: Person; size?
 
   switch (person.relation) {
     case "ninguna":
-      return <Button full={full} className={full ? "" : small} onClick={() => setRelation(person.id, "solicitud_enviada")}>Agregar</Button>;
+      return <Button full={full} className={full ? "" : small} onClick={() => setRelation(person.id, "solicitud_enviada", person)}>Agregar</Button>;
     case "solicitud_enviada":
       return (
         <Button full={full} variant="secondary" className={full ? "" : small} onClick={() => setRelation(person.id, "ninguna")} aria-label={`Cancelar solicitud a ${person.name}`}>

@@ -15,7 +15,7 @@ type Tab = "mias" | "comunidad" | "amigos";
 
 interface Props {
   user?: User;
-  usual: { origin: Place; destination: Place; route: RouteOption; newAlerts: number };
+  usual: { origin: Place; destination: Place; route: RouteOption; newAlerts: number } | null;
   rides?: Ride[];
   communityRides: CommunityRide[];
   activity: FriendActivity[];
@@ -24,7 +24,6 @@ interface Props {
 export function Home({ usual, communityRides, activity }: Props) {
   const { friends, received, me: user, myRides: rides, unreadCount } = useSocial();
   const [tab, setTab] = useState<Tab>("mias");
-  const { route } = usual;
   const tabs: { v: Tab; l: string }[] = [
     { v: "mias", l: "Mis rodadas" },
     { v: "comunidad", l: "Comunidad" },
@@ -51,24 +50,36 @@ export function Home({ usual, communityRides, activity }: Props) {
       </header>
 
       <section className="px-4 pt-2">
-        <div className="rounded-card bg-brand-900 p-4 text-white">
-          <p className="text-xs font-semibold uppercase tracking-wide text-white/60">Tu ruta habitual</p>
-          <div className="mt-1 flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-lg font-bold leading-tight">{usual.origin.name} a la UDEM</p>
-              <p className="truncate text-sm text-white/70">vía {route.via}</p>
+        {usual ? (
+          <div className="rounded-card bg-brand-900 p-4 text-white">
+            <p className="text-xs font-semibold uppercase tracking-wide text-white/60">Tu ruta habitual</p>
+            <div className="mt-1 flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-lg font-bold leading-tight">{usual.origin.name} a {usual.destination.name}</p>
+                <p className="truncate text-sm text-white/70">vía {usual.route.via}</p>
+              </div>
+              <SafetyScoreBadge score={usual.route.safetyScore} />
             </div>
-            <SafetyScoreBadge score={route.safetyScore} />
+            <div className="mt-3 flex items-end gap-5">
+              <div><span className="metric text-4xl">{usual.route.minutes}</span><span className="ml-1 font-display text-lg font-semibold text-white/70">min</span></div>
+              {usual.newAlerts > 0 && <p className="flex items-center gap-1.5 pb-1 text-sm font-semibold text-risk-yellow"><TriangleAlert size={18} />{usual.newAlerts} {usual.newAlerts === 1 ? "alerta nueva" : "alertas nuevas"}</p>}
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <Button href={`/rodada?ruta=${usual.route.optionId}`} className="!bg-white !text-brand-900" icon={<Play size={18} fill="currentColor" />}>Iniciar</Button>
+              <Button href="/mapa" variant="outline" className="!border-white/30 !bg-transparent !text-white">Ver en el mapa</Button>
+            </div>
           </div>
-          <div className="mt-3 flex items-end gap-5">
-            <div><span className="metric text-4xl">{route.minutes}</span><span className="ml-1 font-display text-lg font-semibold text-white/70">min</span></div>
-            <p className="flex items-center gap-1.5 pb-1 text-sm font-semibold text-risk-yellow"><TriangleAlert size={18} />{usual.newAlerts} alertas nuevas</p>
+        ) : (
+          <div className="rounded-card bg-brand-900 p-4 text-white">
+            <p className="text-xs font-semibold uppercase tracking-wide text-white/60">Tu ruta habitual</p>
+            <p className="mt-1 text-lg font-bold leading-tight">Guarda un trayecto para verlo aquí</p>
+            <p className="text-sm text-white/70">Planea una ruta en el Mapa y toca Guardar ruta.</p>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <Button href="/mapa" className="!bg-white !text-brand-900">Planear ruta</Button>
+              <Button href="/rodada" variant="outline" className="!border-white/30 !bg-transparent !text-white" icon={<Play size={18} fill="currentColor" />}>Rodada libre</Button>
+            </div>
           </div>
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            <Button href="/rodada?ruta=segura" className="!bg-white !text-brand-900" icon={<Play size={18} fill="currentColor" />}>Iniciar</Button>
-            <Button href="/mapa" variant="outline" className="!border-white/30 !bg-transparent !text-white">Ver en el mapa</Button>
-          </div>
-        </div>
+        )}
       </section>
 
       <div role="tablist" className="sticky top-0 z-10 mt-4 flex border-b border-line bg-white">
@@ -81,7 +92,7 @@ export function Home({ usual, communityRides, activity }: Props) {
 
       {tab === "mias" && (rides.length === 0 ? <EmptyState title="Aún no tienes rodadas" text="Toca Comenzar para registrar tu primera rodada." action={<Button href="/rodada">Comenzar</Button>} /> : rides.map((r) => <RideCard key={r.id} ride={r} />))}
       {tab === "comunidad" &&
-        communityRides.map((r) => <ActivityCard key={r.id} id={r.id} baseKudos={3} personId={r.personId} name={r.person} title={r.title} km={r.km} minutes={r.minutes} safetyScore={r.safetyScore} at={r.at} meta={r.zone} />)}
+        communityRides.map((r) => <ActivityCard key={r.id} id={r.id} kudos={r.kudos} gaveKudo={r.gaveKudo} comments={r.comments} personId={r.personId} name={r.person} title={r.title} km={r.km} minutes={r.minutes} safetyScore={r.safetyScore} at={r.at} meta={r.zone} />)}
       {tab === "amigos" &&
         (() => {
           const feed = activity.filter((a) => friends.some((f) => f.id === a.friendId)).sort((a, b) => b.at.localeCompare(a.at));
@@ -91,7 +102,7 @@ export function Home({ usual, communityRides, activity }: Props) {
             <>
               {feed.map((a) => {
                 const f = friends.find((x) => x.id === a.friendId)!;
-                return <ActivityCard key={a.id} id={a.id} baseKudos={2} personId={f.id} name={f.name} title={a.title} km={a.km} minutes={a.minutes} safetyScore={a.safetyScore} at={a.at} vehicle={a.vehicle} />;
+                return <ActivityCard key={a.id} id={a.id} kudos={a.kudos} gaveKudo={a.gaveKudo} comments={a.comments} personId={f.id} name={f.name} title={a.title} km={a.km} minutes={a.minutes} safetyScore={a.safetyScore} at={a.at} vehicle={a.vehicle} />;
               })}
               <div className="p-4"><Button href="/amigos" variant="secondary" full icon={<UserPlus size={18} />}>Buscar amigos</Button></div>
             </>
