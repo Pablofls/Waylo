@@ -6,7 +6,7 @@ Todas deben leer primero `docs/arquitectura.md`, `docs/vm-setup.md` y [`prompts/
 
 ## Cómo se usa
 
-1. Abre una sesión nueva en este repositorio y dile: "Ejecuta `docs/prompts/<archivo>.md`".
+1. Crea una carpeta de trabajo propia para la sesión y ábrela ahí (cada prompt trae sus dos pasos en la sección "Cómo abrir esta sesión"): un `git worktree` desde `main`, y en la sesión nueva escribe "Ejecuta `docs/prompts/<archivo>.md`".
 2. La sesión crea su rama desde `main`, trabaja y sube sus cambios a esa rama.
 3. Al terminar te avisa con la rama, el resumen y los comandos para la VM.
 4. Vuelves a la sesión principal y se integra la rama a `main` (pull request o merge revisado).

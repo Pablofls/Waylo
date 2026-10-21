@@ -1,6 +1,18 @@
 # Sesión B2: Persistencia y validación de rodadas en el tiempo real
 
-> **Cómo usarlo:** abre una sesión nueva **en una carpeta de trabajo propia** (ver `docs/prompts/reglas-comunes.md`) y escribe: "Ejecuta `docs/prompts/sesion-b2-persistencia.md`".
+## Cómo abrir esta sesión
+
+1. En tu Mac, crea una carpeta de trabajo propia (un `git worktree`) desde `main`:
+
+```bash
+cd ~/Claude/Waylo-main && git fetch origin && git worktree add ../Waylo-b2 -b realtime-persistencia origin/main
+```
+
+2. Después abre una sesión nueva apuntando a esa carpeta (`Waylo-b2`) y escribe:
+
+```text
+Ejecuta docs/prompts/sesion-b2-persistencia.md
+```
 
 **Rama:** `realtime-persistencia` (desde `main`). Alcance: solo `services/realtime/**`. Antes de empezar lee y cumple `docs/prompts/reglas-comunes.md`.
 

@@ -1,6 +1,18 @@
 # Sesión C: App con datos reales
 
-> **Cómo usarlo:** abre una sesión nueva en este repositorio y escribe: "Ejecuta `docs/prompts/sesion-c-app-datos.md`".
+## Cómo abrir esta sesión
+
+1. En tu Mac, crea una carpeta de trabajo propia (un `git worktree`) desde `main`:
+
+```bash
+cd ~/Claude/Waylo-main && git fetch origin && git worktree add ../Waylo-app-datos -b app-datos origin/main
+```
+
+2. Después abre una sesión nueva apuntando a esa carpeta (`Waylo-app-datos`) y escribe:
+
+```text
+Ejecuta docs/prompts/sesion-c-app-datos.md
+```
 
 **Rama:** `app-datos`. Antes de empezar lee y cumple `docs/prompts/reglas-comunes.md` (crea tu rama desde `main`, no toques `main`, trabaja solo en `src/**`, `package.json`, `package-lock.json` y `README.md`).
 

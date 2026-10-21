@@ -1,6 +1,20 @@
 # Sesión B: Servicio en tiempo real (Flask + Flask-Sock)
 
-> **Cómo usarlo:** abre una sesión nueva en este repositorio y escribe: "Ejecuta `docs/prompts/sesion-b-tiempo-real.md`".
+## Cómo abrir esta sesión
+
+> Esta sesión ya se completó y se integró a `main`. Si hubiera que repetirla, usa un nombre de rama nuevo (por ejemplo `realtime-2`).
+
+1. En tu Mac, crea una carpeta de trabajo propia (un `git worktree`) desde `main`:
+
+```bash
+cd ~/Claude/Waylo-main && git fetch origin && git worktree add ../Waylo-realtime -b realtime origin/main
+```
+
+2. Después abre una sesión nueva apuntando a esa carpeta (`Waylo-realtime`) y escribe:
+
+```text
+Ejecuta docs/prompts/sesion-b-tiempo-real.md
+```
 
 **Rama:** `realtime`. Antes de empezar lee y cumple `docs/prompts/reglas-comunes.md` (crea tu rama desde `main`, no toques `main`, trabaja solo en `services/realtime/**`).
 
