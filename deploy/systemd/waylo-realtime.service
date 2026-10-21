@@ -1,0 +1,27 @@
+[Unit]
+Description=Waylo tiempo real (Flask + Flask-Sock)
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=pablogcp26
+WorkingDirectory=/home/pablogcp26/Waylo/services/realtime
+EnvironmentFile=/etc/waylo/waylo.env
+# Un solo worker: el estado de posiciones vive en memoria del proceso.
+# Se invoca con `python -m` para evitar problemas de contexto SELinux al ejecutar scripts del home.
+ExecStart=/home/pablogcp26/Waylo/services/realtime/.venv/bin/python -m gunicorn -w 1 -k gthread --threads 50 -b ${REALTIME_HOST}:${REALTIME_PORT} app:app
+Restart=on-failure
+RestartSec=5
+StartLimitIntervalSec=120
+StartLimitBurst=5
+LimitNOFILE=4096
+MemoryMax=512M
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=waylo-realtime
+
+[Install]
+WantedBy=multi-user.target

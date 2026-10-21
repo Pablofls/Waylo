@@ -1,0 +1,3 @@
+# /etc/sudoers.d/waylo (permisos 440, root:root). Valida con: sudo visudo -cf /etc/sudoers.d/waylo
+# Permite a pablogcp26 reiniciar solo los servicios de Waylo, sin contrasena.
+pablogcp26 ALL=(root) NOPASSWD: /usr/bin/systemctl restart waylo-web, /usr/bin/systemctl restart waylo-realtime, /usr/bin/systemctl is-active waylo-web, /usr/bin/systemctl is-active waylo-realtime

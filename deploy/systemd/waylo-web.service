@@ -1,0 +1,26 @@
+[Unit]
+Description=Waylo web y API (Next.js)
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=pablogcp26
+WorkingDirectory=/home/pablogcp26/Waylo
+EnvironmentFile=/etc/waylo/waylo.env
+# Comprueba la ruta con `command -v npm`; ajusta si Node no esta en /usr/bin.
+ExecStart=/usr/bin/npm run start -- -H 127.0.0.1 -p ${WEB_PORT}
+Restart=on-failure
+RestartSec=5
+StartLimitIntervalSec=120
+StartLimitBurst=5
+LimitNOFILE=4096
+MemoryMax=768M
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=waylo-web
+
+[Install]
+WantedBy=multi-user.target
