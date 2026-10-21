@@ -13,6 +13,17 @@ const barlow = Barlow_Condensed({
 export const metadata: Metadata = {
   title: "Waylo",
   description: "Rutas más seguras para bici y scooter en el Área Metropolitana de Monterrey.",
+  applicationName: "Waylo",
+  // iOS: al agregarla a la pantalla de inicio se abre como app (sin barras de Safari).
+  appleWebApp: { capable: true, title: "Waylo", statusBarStyle: "default" },
+  formatDetection: { telephone: false },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 export const viewport: Viewport = {
