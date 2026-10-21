@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
-import type { AppNotification, EmergencyContact, GroupRide, Person, Relation, ReportCompletion, Ride, RideDraft, SavedPlace, SavedRoute, Subscription, User } from "@/types";
+import type { ActivityComment, AppNotification, Club, Place, EmergencyContact, GroupRide, Person, Relation, ReportCompletion, Ride, RideDraft, SavedPlace, SavedRoute, Subscription, User } from "@/types";
 
 interface SessionCtx {
   me: User;
@@ -49,6 +49,25 @@ interface SessionCtx {
   subscription: Subscription;
   subscribe: () => void;
   cancelSubscription: () => void;
+  searchHistory: Place[];
+  addSearch: (p: Place) => void;
+  removeSearch: (name: string) => void;
+  clearSearches: () => void;
+  offlineMaps: string[];
+  toggleOfflineMap: (id: string) => void;
+  liveShare: { with: string[]; hours: number | null } | null;
+  startLiveShare: (names: string[], hours: number | null) => void;
+  stopLiveShare: () => void;
+  kudos: string[];
+  toggleKudo: (activityId: string) => void;
+  comments: ActivityComment[];
+  addComment: (activityId: string, text: string) => void;
+  clubs: Club[];
+  joinClub: (id: string) => void;
+  leaveClub: (id: string) => void;
+  createClub: (d: { name: string; description: string; zone: string; privacy: Club["privacy"] }) => string;
+  joinedChallenges: string[];
+  toggleChallenge: (id: string) => void;
 }
 
 const Ctx = createContext<SessionCtx | null>(null);
@@ -68,6 +87,9 @@ interface Props {
   notifications: AppNotification[];
   savedRoutes: SavedRoute[];
   emergencyContacts: EmergencyContact[];
+  searchHistory: Place[];
+  comments: ActivityComment[];
+  clubs: Club[];
   children: React.ReactNode;
 }
 
@@ -75,7 +97,7 @@ interface Props {
  * Estado de sesión en el cliente (amigos, rodadas, lugares, notificaciones, reportes), sembrado con los mocks.
  * Los cambios viven solo hasta recargar; en fase 3 se reemplaza por la base de datos.
  */
-export function SocialProvider({ me: initialMe, people: initialPeople, rides: initialRides, myRides: initialMyRides, savedPlaces: initialPlaces, notifications: initialNotifs, savedRoutes: initialRoutes, emergencyContacts: initialContacts, children }: Props) {
+export function SocialProvider({ me: initialMe, people: initialPeople, rides: initialRides, myRides: initialMyRides, savedPlaces: initialPlaces, notifications: initialNotifs, savedRoutes: initialRoutes, emergencyContacts: initialContacts, searchHistory: initialSearches, comments: initialComments, clubs: initialClubs, children }: Props) {
   const [me, setMe] = useState(initialMe);
   const [people, setPeople] = useState(initialPeople);
   const [rides, setRides] = useState(initialRides);
@@ -90,6 +112,13 @@ export function SocialProvider({ me: initialMe, people: initialPeople, rides: in
   const [fallDetection, setFallDetection] = useState(true);
   const [blocked, setBlocked] = useState<string[]>([]);
   const [subscription, setSubscription] = useState<Subscription>({ active: false });
+  const [searches, setSearches] = useState(initialSearches);
+  const [offlineMaps, setOfflineMaps] = useState<string[]>([]);
+  const [liveShare, setLiveShare] = useState<{ with: string[]; hours: number | null } | null>(null);
+  const [kudos, setKudos] = useState<string[]>([]);
+  const [comments, setComments] = useState(initialComments);
+  const [clubs, setClubs] = useState(initialClubs);
+  const [joinedChallenges, setJoinedChallenges] = useState<string[]>(["ch_1", "ch_2"]);
 
   const setRelation = useCallback((id: string, relation: Relation) => setPeople((ps) => ps.map((p) => (p.id === id ? { ...p, relation } : p))), []);
   const patchRide = useCallback((id: string, fn: (r: GroupRide) => GroupRide) => setRides((rs) => rs.map((r) => (r.id === id ? fn(r) : r))), []);
@@ -148,8 +177,31 @@ export function SocialProvider({ me: initialMe, people: initialPeople, rides: in
       subscription,
       subscribe: () => setSubscription({ active: true }),
       cancelSubscription: () => setSubscription({ active: true, cancelled: true, until: "2026-11-20" }),
+      searchHistory: searches,
+      addSearch: (p) => setSearches((x) => [p, ...x.filter((y) => y.name !== p.name)].slice(0, 6)),
+      removeSearch: (name) => setSearches((x) => x.filter((y) => y.name !== name)),
+      clearSearches: () => setSearches([]),
+      offlineMaps,
+      toggleOfflineMap: (id) => setOfflineMaps((x) => (x.includes(id) ? x.filter((y) => y !== id) : [...x, id])),
+      liveShare,
+      startLiveShare: (names, hours) => setLiveShare({ with: names, hours }),
+      stopLiveShare: () => setLiveShare(null),
+      kudos,
+      toggleKudo: (id) => setKudos((x) => (x.includes(id) ? x.filter((y) => y !== id) : [...x, id])),
+      comments,
+      addComment: (activityId, text) => setComments((x) => [...x, { id: `cm_${Date.now()}`, activityId, personId: me.id, text, at: new Date().toISOString() }]),
+      clubs,
+      joinClub: (id) => setClubs((cs) => cs.map((c) => (c.id === id && !c.memberIds.includes(me.id) ? { ...c, memberIds: [...c.memberIds, me.id] } : c))),
+      leaveClub: (id) => setClubs((cs) => cs.map((c) => (c.id === id ? { ...c, memberIds: c.memberIds.filter((m) => m !== me.id) } : c))),
+      createClub: (d) => {
+        const id = `c_new_${Date.now()}`;
+        setClubs((cs) => [{ id, ...d, ownerId: me.id, memberIds: [me.id], rideIds: [] }, ...cs]);
+        return id;
+      },
+      joinedChallenges,
+      toggleChallenge: (id) => setJoinedChallenges((x) => (x.includes(id) ? x.filter((y) => y !== id) : [...x, id])),
     }),
-    [me, people, rides, myRides, places, notifs, completions, confirmations, cancelledReports, routes, contacts, fallDetection, blocked, subscription, setRelation, patchRide],
+    [me, people, rides, myRides, places, notifs, completions, confirmations, cancelledReports, routes, contacts, fallDetection, blocked, subscription, searches, offlineMaps, liveShare, kudos, comments, clubs, joinedChallenges, setRelation, patchRide],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

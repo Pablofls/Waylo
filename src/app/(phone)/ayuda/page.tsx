@@ -50,6 +50,9 @@ export default function AyudaPage() {
             ))}
           </ul>
         )}
+        <ul className="mx-4 mt-3 divide-y divide-line rounded-card border border-line">
+          {[{ h: "/ayuda/reglas-reportes", l: "Reglas de reporte" }, { h: "/ayuda/comentarios", l: "Enviar comentarios" }, { h: "/acerca-de", l: "Acerca de Waylo" }].map((x) => <li key={x.h}><Link href={x.h} className="flex min-h-[52px] items-center px-4"><span className="flex-1 text-[15px] font-semibold">{x.l}</span><ChevronRight size={18} className="text-muted" /></Link></li>)}
+        </ul>
         <Link href="/ayuda/contacto" className="m-4 flex min-h-[56px] items-center gap-3 rounded-card border border-line px-4">
           <LifeBuoy size={22} className="text-brand-600" /><span className="flex-1 font-semibold">¿No encontraste tu respuesta? Escríbenos</span><ChevronRight size={18} className="text-muted" />
         </Link>

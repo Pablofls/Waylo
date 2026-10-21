@@ -23,3 +23,6 @@ export const PLACES: Place[] = [
   { name: "Macroplaza", detail: "Centro de Monterrey", coordinates: [-100.3098, 25.67] },
   { name: "Plaza Fiesta San Agustín", detail: "San Pedro Garza García", coordinates: [-100.3555, 25.6575] },
 ];
+
+/** Búsquedas recientes de ejemplo. */
+export const SEARCH_HISTORY: Place[] = [PLACES[2], PLACES[3], PLACES[4]];

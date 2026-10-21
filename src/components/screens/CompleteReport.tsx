@@ -43,7 +43,7 @@ export function CompleteReport({ report }: { report: Report | null }) {
     <>
       <ScreenHeader title="Completar reporte" subtitle={cat.label} back={`/reportes/${report.id}`} />
       <div className="flex-1 space-y-5 overflow-y-auto bg-white px-4 pb-6 pt-3">
-        <p className="text-sm text-muted">Con más detalles el municipio puede atender tu reporte más rápido.</p>
+        <p className="text-sm text-muted">Con más detalles el municipio puede atender tu reporte más rápido. <a href="/ayuda/reglas-reportes" className="font-semibold text-brand-600 underline">Reglas de reporte</a></p>
 
         <div>
           <p className="mb-1.5 text-sm font-semibold">Gravedad</p>

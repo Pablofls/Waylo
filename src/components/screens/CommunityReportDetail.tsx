@@ -1,6 +1,8 @@
 "use client";
 
-import { MapPin, ThumbsUp, Users, CheckCircle2 } from "lucide-react";
+import { useState } from "react";
+import { Flag, MapPin, ThumbsUp, Users, CheckCircle2 } from "lucide-react";
+import { ReportContentSheet } from "@/components/domain/ReportContentSheet";
 import { ScreenHeader } from "@/components/layout/ScreenHeader";
 import { MapView } from "@/components/map/MapView";
 import { ReportMarkers } from "@/components/map/ReportMarkers";
@@ -16,6 +18,7 @@ const tone = { enviado: "neutral", en_revision: "yellow", atendido: "brand" } as
 
 export function CommunityReportDetail({ report, mine }: { report: Report | null; mine: boolean }) {
   const { confirmations, confirmReport } = useSocial();
+  const [flagging, setFlagging] = useState(false);
   if (!report) return (<><ScreenHeader title="Reporte" back="/comunidad" /><EmptyState title="No encontramos este reporte" text="Puede que ya haya sido eliminado." /></>);
 
   const cat = categoryById(report.category);
@@ -48,8 +51,11 @@ export function CommunityReportDetail({ report, mine }: { report: Report | null;
               )}
             </div>
           )}
+          {!mine && <button onClick={() => setFlagging(true)} className="flex min-h-[44px] items-center gap-2 text-sm font-semibold text-muted"><Flag size={16} />Reportar este contenido</button>}
+          <a href="/ayuda/reglas-reportes" className="block text-sm font-semibold text-brand-600 underline">Reglas de reporte</a>
         </div>
       </div>
+      <ReportContentSheet open={flagging} title="Reportar contenido" reasons={["Información falsa", "Ya está atendido", "Repetido", "Ofensivo", "Otro"]} onClose={() => setFlagging(false)} />
     </>
   );
 }

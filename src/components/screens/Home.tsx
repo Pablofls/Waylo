@@ -81,7 +81,7 @@ export function Home({ usual, communityRides, activity }: Props) {
 
       {tab === "mias" && (rides.length === 0 ? <EmptyState title="Aún no tienes rodadas" text="Toca Comenzar para registrar tu primera rodada." action={<Button href="/rodada">Comenzar</Button>} /> : rides.map((r) => <RideCard key={r.id} ride={r} />))}
       {tab === "comunidad" &&
-        communityRides.map((r) => <ActivityCard key={r.id} personId={r.personId} name={r.person} title={r.title} km={r.km} minutes={r.minutes} safetyScore={r.safetyScore} at={r.at} meta={r.zone} />)}
+        communityRides.map((r) => <ActivityCard key={r.id} id={r.id} baseKudos={3} personId={r.personId} name={r.person} title={r.title} km={r.km} minutes={r.minutes} safetyScore={r.safetyScore} at={r.at} meta={r.zone} />)}
       {tab === "amigos" &&
         (() => {
           const feed = activity.filter((a) => friends.some((f) => f.id === a.friendId)).sort((a, b) => b.at.localeCompare(a.at));
@@ -91,7 +91,7 @@ export function Home({ usual, communityRides, activity }: Props) {
             <>
               {feed.map((a) => {
                 const f = friends.find((x) => x.id === a.friendId)!;
-                return <ActivityCard key={a.id} personId={f.id} name={f.name} title={a.title} km={a.km} minutes={a.minutes} safetyScore={a.safetyScore} at={a.at} vehicle={a.vehicle} />;
+                return <ActivityCard key={a.id} id={a.id} baseKudos={2} personId={f.id} name={f.name} title={a.title} km={a.km} minutes={a.minutes} safetyScore={a.safetyScore} at={a.at} vehicle={a.vehicle} />;
               })}
               <div className="p-4"><Button href="/amigos" variant="secondary" full icon={<UserPlus size={18} />}>Buscar amigos</Button></div>
             </>

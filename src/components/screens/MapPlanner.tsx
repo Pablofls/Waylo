@@ -44,7 +44,7 @@ export function MapPlanner({ risk, reports, routes, origin, places, maxExtraMinu
   const [picked, setPicked] = useState<RouteKind>(initialRoute ?? "segura");
   const [expanded, setExpanded] = useState(true);
   const position = useUserPosition(origin.coordinates);
-  const { savedPlaces, savedRoutes, addSavedRoute, removeSavedRoute } = useSocial();
+  const { savedPlaces, savedRoutes, addSavedRoute, removeSavedRoute, searchHistory, addSearch, removeSearch, clearSearches } = useSocial();
   const [filterOpen, setFilterOpen] = useState(false);
   const [cats, setCats] = useState<ReportCategory[]>([]);
   const [age, setAge] = useState<ReportAge>("todo");
@@ -63,6 +63,7 @@ export function MapPlanner({ risk, reports, routes, origin, places, maxExtraMinu
   const matches = useMemo(() => places.filter((p) => `${p.name} ${p.detail}`.toLowerCase().includes(query.trim().toLowerCase())), [places, query]);
 
   const choose = (p: Place) => {
+    addSearch(p);
     setDest(p);
     setSearching(false);
     setQuery("");
@@ -116,6 +117,18 @@ export function MapPlanner({ risk, reports, routes, origin, places, maxExtraMinu
           </div>
           {searching && (
             <ul className="mt-2 max-h-[240px] overflow-y-auto border-t border-line">
+              {query.trim() === "" && searchHistory.length > 0 && (
+                <>
+                  <li className="flex items-center justify-between px-3 pt-2"><span className="text-xs font-bold uppercase tracking-wide text-muted">Recientes</span><button onClick={clearSearches} className="min-h-[44px] text-xs font-semibold text-brand-600">Borrar historial</button></li>
+                  {searchHistory.map((p) => (
+                    <li key={`h-${p.name}`} className="flex items-center">
+                      <button onClick={() => choose(p)} className="flex min-h-[52px] min-w-0 flex-1 items-center gap-3 px-3 text-left active:bg-canvas"><Clock size={18} className="shrink-0 text-muted" /><span className="min-w-0"><span className="block truncate text-sm font-semibold">{p.name}</span><span className="block truncate text-xs text-muted">{p.detail}</span></span></button>
+                      <button aria-label={`Quitar ${p.name} del historial`} onClick={() => removeSearch(p.name)} className="flex h-11 w-11 shrink-0 items-center justify-center text-muted"><X size={16} /></button>
+                    </li>
+                  ))}
+                  <li className="px-3 pt-1 text-xs font-bold uppercase tracking-wide text-muted">Lugares</li>
+                </>
+              )}
               {matches.length === 0 && <li className="px-3 py-4 text-sm text-muted">Sin resultados para esa búsqueda.</li>}
               {matches.map((p) => (
                 <li key={p.name}>

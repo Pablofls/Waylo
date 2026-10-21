@@ -32,45 +32,16 @@ Prioridad: P0 imprescindible para un uso completo, P1 importante, P2 deseable.
 | Premium | Pago, confirmación, suscripción y aviso de función bloqueada | `/premium/pago`, `/premium/confirmacion`, `/premium/suscripcion` |
 | Ayuda | Centro de ayuda, contacto y guía del Safety Score | `/ayuda`, `/ayuda/contacto`, `/ayuda/safety-score` |
 
+| Cuenta | Sesión vencida | `/sesion-vencida` |
+| Mapa | Historial de búsquedas (en el buscador del Mapa) | `/mapa` |
+| Mapa | Mapas sin conexión, seguridad por zona y detalle de zona (Premium) | `/mapas-sin-conexion`, `/zonas`, `/zonas/[id]` |
+| Rodada | Compartir ubicación en vivo y vista de quien te sigue | `/compartir-ubicacion`, `/seguimiento/[id]` |
+| Reportes | Reglas de reporte y reportar contenido inapropiado | `/ayuda/reglas-reportes`, `/reportes-comunidad/[id]` |
+| Social | Reacciones y comentarios en actividad | `/publicacion/[id]` |
+| Social | Retos, ranking mensual y clubes (lista, detalle, crear) | `/retos`, `/comunidad`, `/clubes/[id]`, `/clubes/nuevo` |
+| Premium | Historial de pagos y recibo | `/premium/pagos`, `/premium/pagos/[id]` |
+| Ayuda | Enviar comentarios, acerca de y licencias | `/ayuda/comentarios`, `/acerca-de`, `/acerca-de/licencias` |
+
 ## Pendientes
 
-### Cuenta y acceso
-| Pantalla | Prioridad |
-|---|---|
-| Sesión vencida | P2 |
-
-### Mapa y rutas
-| Pantalla | Prioridad |
-|---|---|
-| Historial de búsquedas | P2 |
-| Detalle de una zona e historial de seguridad (Premium) | P2 |
-| Mapas sin conexión (Premium) | P2 |
-
-### Rodada
-| Pantalla | Prioridad |
-|---|---|
-| Compartir ubicación en vivo | P2 |
-
-### Reportes
-| Pantalla | Prioridad |
-|---|---|
-| Reglas de reporte (qué sí y qué no) | P2 |
-| Reportar contenido inapropiado | P2 |
-
-### Comunidad y social
-| Pantalla | Prioridad |
-|---|---|
-| Reacciones y comentarios en actividad | P2 |
-| Retos y ranking mensual | P2 |
-| Clubes: lista, detalle, unirse, crear | P2 |
-
-### Premium y pagos
-| Pantalla | Prioridad |
-|---|---|
-| Historial de pagos y recibos | P2 |
-
-### Configuración y ayuda
-| Pantalla | Prioridad |
-|---|---|
-| Enviar comentarios | P2 |
-| Acerca de, versión y licencias | P2 |
+Ninguna pantalla pendiente de la fase 1. Siguen siendo de demostración (datos en memoria o simulados): pagos, códigos de verificación, descargas de mapas, detección de caídas, reacciones, comentarios y clubes. Se conectan a datos reales en las fases 2 y 3.

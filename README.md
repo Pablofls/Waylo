@@ -35,6 +35,7 @@ La rodada en vivo usa modo simulación por defecto (desactívalo para usar el GP
 
 - Base de datos (Supabase + PostGIS): usuarios, rodadas (trazas), reportes y rodadas grupales, en lugar de `src/mocks`.
 - Amigos y rodadas grupales reales (hoy viven en memoria, en `src/lib/social.tsx`, y se pierden al recargar).
+- Reacciones, comentarios, clubes, retos y ranking reales (hoy en memoria).
 - Autenticación real (login, registro, Google y Apple, recuperar contraseña).
 - Rutas reales (OpenRouteService desde API Routes) y cálculo del Safety Score por factor.
 - Map matching de las trazas (GraphHopper o Valhalla).

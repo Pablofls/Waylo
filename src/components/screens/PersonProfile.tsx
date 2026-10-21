@@ -112,7 +112,7 @@ export function PersonProfile({ id, activity, allBadges }: { id: string; activit
             activity.length === 0 ? (
               <p className="px-4 pb-6 text-sm text-muted">Aún no tiene rodadas recientes.</p>
             ) : (
-              <div className="border-t border-line">{activity.map((a) => <ActivityCard key={a.id} name={person.name} personId={person.id} title={a.title} km={a.km} minutes={a.minutes} safetyScore={a.safetyScore} at={a.at} vehicle={a.vehicle} />)}</div>
+              <div className="border-t border-line">{activity.map((a) => <ActivityCard key={a.id} id={a.id} baseKudos={2} name={person.name} personId={person.id} title={a.title} km={a.km} minutes={a.minutes} safetyScore={a.safetyScore} at={a.at} vehicle={a.vehicle} />)}</div>
             )
           ) : (
             <div className="mx-4 mb-6 flex items-start gap-3 rounded-card border border-line bg-canvas p-4">

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CalendarPlus, ChevronRight, MapPin, Route as RouteIcon, Users as UsersIcon } from "lucide-react";
+import { CalendarPlus, ChevronRight, MapPin, Route as RouteIcon, Trophy, Users as UsersIcon } from "lucide-react";
+import { ClubsList } from "./Clubs";
 import { ReportListItem } from "@/components/domain/ReportListItem";
 import { AttendeeStack } from "@/components/domain/AttendeeStack";
 import { Badge } from "@/components/ui/Badge";
@@ -18,7 +19,7 @@ type Filter = "proximas" | "voy" | "mias" | "pasadas";
 
 export function Community({ reports }: { reports: Report[] }) {
   const { rides, me, join, people } = useSocial();
-  const [tab, setTab] = useState<"reportes" | "rodadas">("reportes");
+  const [tab, setTab] = useState<"reportes" | "rodadas" | "clubes">("reportes");
   const [filter, setFilter] = useState<Filter>("proximas");
 
   const visible = (r: GroupRide) => r.privacy === "publica" || r.organizerId === me.id || r.attendeeIds.includes(me.id) || people.find((p) => p.id === r.organizerId)?.relation === "amigo";
@@ -35,7 +36,7 @@ export function Community({ reports }: { reports: Report[] }) {
     { v: "mias", l: "Organizadas por mí" },
     { v: "pasadas", l: "Pasadas" },
   ];
-  const tabs = [{ v: "reportes", l: "Reportes cerca de ti" }, { v: "rodadas", l: "Rodadas grupales" }] as const;
+  const tabs = [{ v: "reportes", l: "Reportes" }, { v: "rodadas", l: "Rodadas" }, { v: "clubes", l: "Clubes" }] as const;
   const nameOf = (id: string) => (id === me.id ? me.name : people.find((p) => p.id === id)?.name ?? "");
 
   return (
@@ -43,7 +44,7 @@ export function Community({ reports }: { reports: Report[] }) {
       <header className="pt-safe shrink-0 bg-white px-4">
         <div className="flex items-center justify-between pt-4">
           <h1 className="text-2xl font-bold">Comunidad</h1>
-          <Link href="/amigos" aria-label="Amigos" className="flex h-11 items-center gap-2 rounded-full border border-line px-4 text-sm font-semibold"><UsersIcon size={18} />Amigos</Link>
+          <div className="flex gap-2"><Link href="/retos" aria-label="Retos y ranking" className="flex h-11 items-center gap-2 rounded-full border border-line px-4 text-sm font-semibold"><Trophy size={18} />Retos</Link><Link href="/amigos" aria-label="Amigos" className="flex h-11 items-center gap-2 rounded-full border border-line px-4 text-sm font-semibold"><UsersIcon size={18} />Amigos</Link></div>
         </div>
         <div role="tablist" className="mt-2 flex">
           {tabs.map((t) => (
@@ -53,7 +54,9 @@ export function Community({ reports }: { reports: Report[] }) {
       </header>
 
       <div className="relative flex-1 overflow-y-auto bg-white">
-        {tab === "reportes" ? (
+        {tab === "clubes" ? (
+          <ClubsList />
+        ) : tab === "reportes" ? (
           reports.map((r) => <ReportListItem key={r.id} report={{ ...r }} href={`/reportes-comunidad/${r.id}`} />)
         ) : (
           <>

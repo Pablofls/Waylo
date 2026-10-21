@@ -8,10 +8,13 @@ import { mockBadges, confirmedReports } from "@/mocks/badges";
 import { riskPoints } from "@/mocks/risk-points";
 import { people, friendActivity } from "@/mocks/people";
 import { navSteps, navAlerts } from "@/mocks/navigation";
+import { clubs, challenges } from "@/mocks/clubs";
+import { comments } from "@/mocks/comments";
+import { zones } from "@/mocks/zones";
 import { emergencyContacts, savedRoutes } from "@/mocks/emergency";
 import { savedPlaces } from "@/mocks/saved-places";
 import { notifications } from "@/mocks/notifications";
-import { PLACES, HOME, UNIVERSITY, MONTERREY_CENTER } from "@/mocks/places";
+import { SEARCH_HISTORY, PLACES, HOME, UNIVERSITY, MONTERREY_CENTER } from "@/mocks/places";
 
 const wait = <T,>(v: T) => Promise.resolve(v);
 
@@ -41,3 +44,9 @@ export const getNotifications = () => wait(notifications);
 export const getAnyReport = (id: string) => wait([...mockReports, ...communityReports].find((r) => r.id === id) ?? null);
 export const getEmergencyContacts = () => wait(emergencyContacts);
 export const getSavedRoutes = () => wait(savedRoutes);
+export const getClubs = () => wait(clubs);
+export const getChallenges = () => wait(challenges);
+export const getComments = () => wait(comments);
+export const getSearchHistory = () => wait(SEARCH_HISTORY);
+export const getZones = () => wait(zones);
+export const getZone = (id: string) => wait(zones.find((z) => z.id === id) ?? null);

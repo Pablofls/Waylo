@@ -31,7 +31,7 @@ export default function SuscripcionPage() {
           <p className="mt-1 text-[15px]">Tarjeta terminada en 4242</p>
         </div>
         <div>
-          <h2 className="text-lg font-bold">Recibos</h2>
+          <div className="flex items-center justify-between"><h2 className="text-lg font-bold">Recibos</h2><a href="/premium/pagos" className="flex min-h-[44px] items-center text-sm font-semibold text-brand-600">Ver historial</a></div>
           <ul className="mt-2 divide-y divide-line rounded-card border border-line">
             <li className="flex min-h-[52px] items-center justify-between px-4 text-[15px]"><span>20 de octubre de 2026</span><span className="font-semibold">$79.00</span></li>
           </ul>

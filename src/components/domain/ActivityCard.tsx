@@ -1,10 +1,17 @@
+"use client";
+
 import Link from "next/link";
-import { Bike, Scooter } from "lucide-react";
+import { Bike, MessageCircle, Scooter, ThumbsUp } from "lucide-react";
 import { Avatar } from "./Avatar";
 import { SafetyScoreBadge } from "./SafetyScoreBadge";
+import { useSocial } from "@/lib/social";
 import { formatDateTime } from "@/lib/format";
 
 interface Props {
+  /** Id de la actividad: habilita reacciones y comentarios. */
+  id?: string;
+  /** Reacciones iniciales de ejemplo. */
+  baseKudos?: number;
   name: string;
   /** Si se pasa, el avatar y el nombre enlazan al perfil. */
   personId?: string;
@@ -18,7 +25,11 @@ interface Props {
 }
 
 /** Actividad de otra persona (amigo o comunidad). */
-export function ActivityCard({ name, personId, title, km, minutes, safetyScore, at, vehicle, meta }: Props) {
+export function ActivityCard({ id, baseKudos = 0, name, personId, title, km, minutes, safetyScore, at, vehicle, meta }: Props) {
+  const { kudos, toggleKudo, comments } = useSocial();
+  const gave = id ? kudos.includes(id) : false;
+  const count = baseKudos + (gave ? 1 : 0);
+  const nComments = id ? comments.filter((c) => c.activityId === id).length : 0;
   const Icon = vehicle === "scooter" ? Scooter : Bike;
   return (
     <div className="flex gap-3 border-b border-line bg-white px-4 py-4">
@@ -37,6 +48,12 @@ export function ActivityCard({ name, personId, title, km, minutes, safetyScore, 
           <span className="mx-2 text-line">|</span>
           <span className="metric text-xl">{minutes}</span> <span className="text-muted">min</span>
         </p>
+        {id && (
+          <div className="-ml-2 mt-1 flex items-center gap-1">
+            <button onClick={() => toggleKudo(id)} aria-pressed={gave} aria-label={gave ? "Quitar reacción" : "Reaccionar"} className={`flex min-h-[44px] items-center gap-1.5 rounded-full px-3 text-sm font-semibold ${gave ? "text-brand-700" : "text-muted"}`}><ThumbsUp size={18} fill={gave ? "currentColor" : "none"} />{count > 0 ? count : "Bien hecho"}</button>
+            <Link href={`/publicacion/${id}`} className="flex min-h-[44px] items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-muted"><MessageCircle size={18} />{nComments > 0 ? nComments : "Comentar"}</Link>
+          </div>
+        )}
       </div>
       <SafetyScoreBadge score={safetyScore} size="sm" />
     </div>

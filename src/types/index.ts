@@ -218,3 +218,51 @@ export interface Subscription {
   until?: string;
   cancelled?: boolean;
 }
+
+export interface Club {
+  id: string;
+  name: string;
+  description: string;
+  zone: string;
+  privacy: "publico" | "privado";
+  ownerId: string;
+  memberIds: string[];
+  rideIds: string[];
+}
+
+export interface Challenge {
+  id: string;
+  title: string;
+  description: string;
+  metric: "km" | "rodadas" | "reportes" | "score";
+  goal: number;
+  progress: number;
+  daysLeft: number;
+  reward: string;
+  participants: number;
+}
+
+export interface ActivityComment {
+  id: string;
+  activityId: string;
+  personId: string;
+  text: string;
+  at: string;
+}
+
+export interface Zone {
+  id: string;
+  name: string;
+  detail: string;
+  coordinates: LngLat;
+  score: number;
+  /** Cambio del Safety Score contra el mes anterior. */
+  trend: number;
+  /** Safety Score promedio de los últimos 6 meses (de más antiguo a más reciente). */
+  monthly: number[];
+  months: string[];
+  reportsByType: { category: ReportCategory; count: number }[];
+  /** Riesgo 0-100 por franja horaria. */
+  hourly: { label: string; risk: number }[];
+  summary: string;
+}
