@@ -17,9 +17,10 @@ Lista viva que mantiene la sesión principal. Cada punto indica quién lo resuel
 - `npm ci` borra `node_modules` con la app en marcha: valorar `npm ci` en una copia o ventana de mantenimiento.
 - Capacidad del tiempo real: un worker con 50 hilos (`gthread`) limita a unas 50 conexiones simultáneas. Subir `--threads` o pasar a `gevent` si hace falta.
 - Agregar `Environment=NODE_ENV=production` a `waylo-web.service`.
-- La cabecera HSTS de un año está sobre un nombre provisional (`sslip.io`): reducirla mientras no haya dominio definitivo.
+- HSTS está en 1 semana (nombre provisional `sslip.io`): subirlo cuando haya dominio definitivo.
 
 ## Resuelto
 
 - `deploy.sh` carga `MIGRATOR_DATABASE_URL` desde `/etc/waylo/migrator.env` (permisos 600), separado de `waylo.env`: la app no tiene permisos de DDL.
-- El token JWT viaja en la URL del WebSocket: `access_log off` en `/ws` para que no quede en los logs de Nginx.
+- El token JWT viaja en la URL del WebSocket: la ruta `/ws` no se registra en el log de accesos de Apache (`SetEnvIf` y `env=!waylo_nolog`).
+- Apache (no Nginx) es el servidor que ya corre en la VM: la configuración de proxy vive en `deploy/httpd/`.

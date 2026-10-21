@@ -8,7 +8,7 @@ Contrato común para las sesiones de trabajo en paralelo. Si algo de aquí cambi
  Teléfono / navegador (Next.js + MapLibre)
         |  https (443)                     wss (443)
         v                                    v
-   ┌─────────────────────── Nginx (VM) ───────────────────────┐
+   ┌─────────────────────── Apache httpd (VM) ───────────────────────┐
    |  /        -> 127.0.0.1:3100  (Next.js: web + API)         |
    |  /ws      -> 127.0.0.1:5950  (Flask + Flask-Sock)         |
    |  /health/waylo -> 127.0.0.1:5950/health                   |
@@ -25,7 +25,7 @@ Inspirada en la arquitectura "Rastreo GPS en tiempo real con WebSockets" de la c
 
 ## Piezas y puertos
 
-| Pieza | Tecnología | Puerto | Expuesto por Nginx |
+| Pieza | Tecnología | Puerto | Expuesto por Apache |
 |---|---|---|---|
 | Web y API | Next.js (`next start`) | `127.0.0.1:3100` | `/` |
 | Tiempo real | Python 3.12, Flask, Flask-Sock | `127.0.0.1:5950` | `/ws` y `/health/waylo` |
@@ -117,7 +117,7 @@ services/realtime/
   requirements.txt
   tests/              Pruebas con puntos fijos (no simulan vehículos en movimiento)
 deploy/
-  nginx/waylo.conf
+  httpd/                  VirtualHosts de Apache (00-default.conf, waylo-http.conf, waylo.conf)
   systemd/waylo-web.service, waylo-realtime.service
   deploy.sh           pull, build, migraciones y reinicio
 docs/                 Este documento, vm-setup.md, sesiones.md
