@@ -42,12 +42,13 @@ else
   echo "Aviso: services/realtime no existe todavia; se omite."
 fi
 
-if [ -x db/apply.sh ]; then
+if [ -f db/apply.sh ]; then
   msg "Migraciones (db/apply.sh)"
-  ./db/apply.sh || fail "db/apply.sh fallo; no se reinicio nada."
-elif [ -f db/apply.sh ]; then
-  msg "Migraciones (db/apply.sh)"
-  bash db/apply.sh || fail "db/apply.sh fallo; no se reinicio nada."
+  # Las credenciales de migracion (rol waylo_user, con DDL) viven aparte de waylo.env:
+  # el servicio y la web usan waylo_app, que no puede crear ni borrar tablas.
+  MIG_ENV="${WAYLO_MIGRATOR_ENV:-/etc/waylo/migrator.env}"
+  [ -r "$MIG_ENV" ] || fail "No se puede leer $MIG_ENV (credenciales de migracion; ver docs/vm-setup.md)."
+  ( set -a; . "$MIG_ENV"; set +a; bash db/apply.sh ) || fail "db/apply.sh fallo; no se reinicio nada."
 else
   echo "Aviso: db/apply.sh no existe todavia; se omite."
 fi
