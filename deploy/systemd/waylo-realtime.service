@@ -8,8 +8,11 @@ User=pablogcp26
 WorkingDirectory=/home/pablogcp26/Waylo/services/realtime
 EnvironmentFile=/etc/waylo/waylo.env
 # Un solo worker: el estado de posiciones vive en memoria del proceso.
-# Se invoca con `python -m` para evitar problemas de contexto SELinux al ejecutar scripts del home.
-ExecStart=/home/pablogcp26/Waylo/services/realtime/.venv/bin/python -m gunicorn -w 1 -k gthread --threads 50 -b ${REALTIME_HOST}:${REALTIME_PORT} app:app
+# SELinux (CentOS) impide que systemd (init_t) lea el enlace simbolico .venv/bin/python guardado en el
+# home (user_home_t), lo que daba "status=203/EXEC Permission denied". Por eso se ejecuta el Python
+# del sistema (/usr/bin, bin_t) y los paquetes del entorno virtual se toman con PYTHONPATH.
+Environment=PYTHONPATH=/home/pablogcp26/Waylo/services/realtime/.venv/lib/python3.12/site-packages
+ExecStart=/usr/bin/python3.12 -m gunicorn -w 1 -k gthread --threads 50 -b ${REALTIME_HOST}:${REALTIME_PORT} app:app
 Restart=on-failure
 RestartSec=5
 StartLimitIntervalSec=120
