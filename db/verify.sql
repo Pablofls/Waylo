@@ -181,7 +181,7 @@ BEGIN
                                   VALUES (pg_temp.id('usuario:u_001'), pg_temp.id('lugar:udem'), 'favorito', 'UDEM pública')$q$, '23503', 'un lugar guardado debe ser del propio usuario');
   PERFORM pg_temp.debe_fallar($q$INSERT INTO lugar (nombre, geog) VALUES ('Fuera del AMM', ST_SetSRID(ST_MakePoint(-99.1, 19.4), 4326)::geography)$q$, '23514', 'lugar fuera de la zona metropolitana');
   PERFORM pg_temp.debe_fallar($q$INSERT INTO ruta_opcion_factor (opcion_id, factor_clave, calificacion, explicacion)
-                                  VALUES (pg_temp.id('ruta_opcion:segura'), 'trafico', 101, 'x')$q$, '23505', 'factor duplicado por opción (llave primaria)');
+                                  VALUES (pg_temp.id('ruta_opcion:segura'), 'trafico', 50, 'x')$q$, '23505', 'factor duplicado por opción (llave primaria)');
   PERFORM pg_temp.debe_fallar($q$UPDATE ruta_opcion_factor SET calificacion = 101 WHERE opcion_id = pg_temp.id('ruta_opcion:segura')$q$, '23514', 'calificación de 0 a 100');
 
   -- Rodadas y trazas
