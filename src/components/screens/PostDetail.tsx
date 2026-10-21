@@ -11,39 +11,35 @@ import { EmptyState } from "@/components/ui/States";
 import { useSocial } from "@/lib/social";
 import { formatDateTime } from "@/lib/format";
 
-interface Post {
-  id: string;
-  personId: string;
-  name: string;
-  title: string;
-  km: number;
-  minutes: number;
-  safetyScore: number;
-  at: string;
-  vehicle?: "bicicleta" | "scooter";
-}
+import type { Post } from "@/server/social";
 
 export function PostDetail({ post }: { post: Post | null }) {
-  const { comments, addComment, me, person, blocked } = useSocial();
+  const { addComment, denounceComment, me, person } = useSocial();
   const [text, setText] = useState("");
-  const [reporting, setReporting] = useState(false);
+  const [error, setError] = useState("");
+  const [reporting, setReporting] = useState<string | null>(null);
 
   if (!post) return (<><ScreenHeader title="Actividad" back="/inicio" /><EmptyState icon={<MessageCircle size={26} />} title="No encontramos esta actividad" text="Puede que la hayan eliminado." /></>);
 
   const author = person(post.personId);
-  const list = comments.filter((c) => c.activityId === post.id && !blocked.includes(c.personId));
-  const nameOf = (id: string) => (id === me.id ? me.name : person(id)?.name ?? "Persona de Waylo");
-  const send = () => {
+  const list = post.comments;
+  const nameOf = (id: string) => (id === me.id ? me.name : id === post.personId ? post.name : person(id)?.name ?? "Persona de Waylo");
+  const send = async () => {
     if (!text.trim()) return;
-    addComment(post.id, text.trim());
-    setText("");
+    setError("");
+    try {
+      await addComment(post.id, text.trim());
+      setText("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No pudimos enviar tu comentario.");
+    }
   };
 
   return (
     <>
       <ScreenHeader title="Actividad" back="/inicio" />
       <div className="flex-1 overflow-y-auto bg-white">
-        <ActivityCard id={post.id} baseKudos={post.vehicle ? 2 : 3} personId={post.personId} name={author?.name ?? post.name} title={post.title} km={post.km} minutes={post.minutes} safetyScore={post.safetyScore} at={post.at} vehicle={post.vehicle} />
+        <ActivityCard id={post.id} kudos={post.kudos} gaveKudo={post.gaveKudo} comments={list.length} personId={post.personId} name={author?.name ?? post.name} title={post.title} km={post.km} minutes={post.minutes} safetyScore={post.safetyScore} at={post.at} vehicle={post.vehicle} />
         <h2 className="px-4 pt-4 text-lg font-bold">Comentarios {list.length > 0 && <span className="text-muted">({list.length})</span>}</h2>
         {list.length === 0 ? (
           <p className="px-4 pb-6 pt-2 text-sm text-muted">Sé la primera persona en comentar.</p>
@@ -56,18 +52,19 @@ export function PostDetail({ post }: { post: Post | null }) {
                   <p className="text-sm"><Link href={c.personId === me.id ? "/perfil" : `/personas/${c.personId}`} className="font-semibold">{nameOf(c.personId)}</Link> <span className="text-muted">· {formatDateTime(c.at)}</span></p>
                   <p className="mt-0.5 text-[15px]">{c.text}</p>
                 </div>
-                {c.personId !== me.id && <button aria-label="Reportar comentario" onClick={() => setReporting(true)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted"><Flag size={16} /></button>}
+                {c.personId !== me.id && <button aria-label="Reportar comentario" onClick={() => setReporting(c.id)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted"><Flag size={16} /></button>}
               </li>
             ))}
           </ul>
         )}
       </div>
-      <form onSubmit={(e) => { e.preventDefault(); send(); }} className="pb-safe flex items-center gap-2 border-t border-line bg-white px-4 pt-3">
+      <form onSubmit={(e) => { e.preventDefault(); void send(); }} className="pb-safe flex items-center gap-2 border-t border-line bg-white px-4 pt-3">
         <input value={text} onChange={(e) => setText(e.target.value)} maxLength={200} aria-label="Escribe un comentario" placeholder="Escribe un comentario" className="min-h-[48px] min-w-0 flex-1 rounded-full border border-line px-4 text-base outline-none placeholder:text-[#8A929C] focus:border-brand-600" />
         <button type="submit" disabled={!text.trim()} aria-label="Enviar comentario" className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-600 text-white disabled:opacity-40"><Send size={20} /></button>
       </form>
+      {error && <p role="alert" className="bg-white px-4 pt-2 text-sm font-semibold text-risk-red">{error}</p>}
       <div className="h-3 bg-white" />
-      <ReportContentSheet open={reporting} title="Reportar comentario" reasons={[{ clave: "inapropiado", label: "Es ofensivo" }, { clave: "spam", label: "Es spam" }, { clave: "falso_o_repetido", label: "Información falsa" }, { clave: "otro", label: "Otro" }]} onSend={async () => {}} onClose={() => setReporting(false)} />
+      <ReportContentSheet open={reporting !== null} title="Reportar comentario" reasons={[{ clave: "inapropiado", label: "Es ofensivo" }, { clave: "spam", label: "Es spam" }, { clave: "falso_o_repetido", label: "Información falsa" }, { clave: "otro", label: "Otro" }]} onSend={(motivo) => denounceComment(reporting!, motivo)} onClose={() => setReporting(null)} />
     </>
   );
 }

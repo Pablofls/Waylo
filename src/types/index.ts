@@ -122,6 +122,10 @@ export interface FriendActivity {
   safetyScore: number;
   at: string;
   vehicle: "bicicleta" | "scooter";
+  /** Reacciones totales (incluye la tuya) y comentarios. */
+  kudos?: number;
+  comments?: number;
+  gaveKudo?: boolean;
 }
 
 export interface CommunityRide {
@@ -134,6 +138,9 @@ export interface CommunityRide {
   safetyScore: number;
   at: string;
   zone: string;
+  kudos?: number;
+  comments?: number;
+  gaveKudo?: boolean;
 }
 
 export type Relation = "amigo" | "solicitud_recibida" | "solicitud_enviada" | "ninguna";

@@ -7,6 +7,8 @@ import { getUserById } from "@/server/cuenta";
 import { historialBusqueda, lugarVisible, lugaresGuardados, lugaresPublicos } from "@/server/lugares";
 import { navegacion, opcionPorId, rutasGuardadas, trayectoHabitual } from "@/server/rutas";
 import { misReportes, miReporte, misVotos, reportesComunidad, reporteVisible } from "@/server/reportes";
+import { misAjustes, municipios } from "@/server/ajustes";
+import { actividadAmigos, actividadComunidad, misBloqueados, misReacciones, persona, personasConocidas, publicacion, sugerencias } from "@/server/social";
 import { puntosDeRiesgo } from "@/server/riesgo";
 import { estadisticaMes, misRodadas, miRodada, resumenRodada } from "@/server/rodadas";
 import { mockReports, communityReports } from "@/mocks/reports";
@@ -61,6 +63,18 @@ export async function getRecentReports() {
   return [...mine, ...community];
 }
 
+export const getPeople = async () => personasConocidas(await sessionUserId());
+export const getPerson = async (id: string) => persona(await sessionUserId(), id);
+export const getSuggestions = async () => sugerencias(await sessionUserId());
+export const getBlocked = async () => misBloqueados(await sessionUserId());
+export const getMyKudos = async () => misReacciones(await sessionUserId());
+export const getSettings = async () => misAjustes(await sessionUserId());
+export const getMunicipalities = () => municipios();
+export const getFriendActivity = async () => actividadAmigos(await sessionUserId());
+export const getCommunityRides = async () => actividadComunidad(await sessionUserId());
+export const getPersonActivity = async (id: string) => actividadAmigos(await sessionUserId(), id);
+export const getPost = async (id: string) => publicacion(await sessionUserId(), id);
+
 export async function getUser() {
   const u = await getOptionalUser();
   if (!u) redirect("/api/auth/sesion-invalida");
@@ -68,15 +82,9 @@ export async function getUser() {
 }
 export const getGroupRides = () => wait(mockGroupRides);
 export const getBadges = () => wait({ badges: mockBadges, confirmedReports });
-export const getFriendActivity = () => wait(friendActivity);
-export const getCommunityRides = () => wait(communityRides);
-export const getPeople = () => wait(people);
-export const getPerson = (id: string) => wait(people.find((p) => p.id === id) ?? null);
-export const getPersonActivity = (id: string) => wait(friendActivity.filter((a) => a.friendId === id));
 export const getNotifications = () => wait(notifications);
 export const getEmergencyContacts = () => wait(emergencyContacts);
 export const getClubs = () => wait(clubs);
 export const getChallenges = () => wait(challenges);
-export const getComments = () => wait(comments);
 export const getZones = () => wait(zones);
 export const getZone = (id: string) => wait(zones.find((z) => z.id === id) ?? null);

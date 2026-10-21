@@ -16,18 +16,19 @@ import { EmptyState } from "@/components/ui/States";
 import { Badge } from "@/components/ui/Badge";
 import { useSocial } from "@/lib/social";
 import { formatDateTime } from "@/lib/format";
-import type { BadgeInfo, FriendActivity } from "@/types";
+import type { BadgeInfo, FriendActivity, Person } from "@/types";
 
 const vehicleLabel = { bicicleta: "Bicicleta", scooter: "Scooter", ambos: "Bicicleta y scooter" } as const;
 
-export function PersonProfile({ id, activity, allBadges }: { id: string; activity: FriendActivity[]; allBadges: BadgeInfo[] }) {
-  const { person: find, rides, blocked, block, unblock } = useSocial();
-  const person = find(id);
+export function PersonProfile({ id, person: loaded, activity, allBadges }: { id: string; person: Person | null; activity: FriendActivity[]; allBadges: BadgeInfo[] }) {
+  const { person: find, rides, blocked, block, unblock, denouncePerson } = useSocial();
+  const person = find(id) ?? loaded ?? undefined;
   const [menu, setMenu] = useState(false);
   const [confirmBlock, setConfirmBlock] = useState(false);
   const [reporting, setReporting] = useState(false);
   const [reason, setReason] = useState("");
   const [reported, setReported] = useState(false);
+  const [reportError, setReportError] = useState("");
 
   if (!person) {
     return (
@@ -112,7 +113,7 @@ export function PersonProfile({ id, activity, allBadges }: { id: string; activit
             activity.length === 0 ? (
               <p className="px-4 pb-6 text-sm text-muted">Aún no tiene rodadas recientes.</p>
             ) : (
-              <div className="border-t border-line">{activity.map((a) => <ActivityCard key={a.id} id={a.id} baseKudos={2} name={person.name} personId={person.id} title={a.title} km={a.km} minutes={a.minutes} safetyScore={a.safetyScore} at={a.at} vehicle={a.vehicle} />)}</div>
+              <div className="border-t border-line">{activity.map((a) => <ActivityCard key={a.id} id={a.id} kudos={a.kudos} gaveKudo={a.gaveKudo} comments={a.comments} name={person.name} personId={person.id} title={a.title} km={a.km} minutes={a.minutes} safetyScore={a.safetyScore} at={a.at} vehicle={a.vehicle} />)}</div>
             )
           ) : (
             <div className="mx-4 mb-6 flex items-start gap-3 rounded-card border border-line bg-canvas p-4">
@@ -145,8 +146,9 @@ export function PersonProfile({ id, activity, allBadges }: { id: string; activit
               <>
                 <h2 className="text-xl font-bold">Reportar a {person.name.split(" ")[0]}</h2>
                 <p className="mt-1 text-sm text-muted">¿Qué pasa con este perfil?</p>
-                <div className="mt-3 flex flex-wrap gap-2">{["Es spam", "Es ofensivo", "Suplanta a alguien", "Reportes falsos", "Otro"].map((r) => <Chip key={r} selected={reason === r} onClick={() => setReason(r)}>{r}</Chip>)}</div>
-                <div className="mt-4 grid grid-cols-2 gap-3"><Button variant="outline" onClick={() => setReporting(false)}>Cancelar</Button><Button disabled={!reason} onClick={() => setReported(true)}>Enviar</Button></div>
+                <div className="mt-3 flex flex-wrap gap-2">{[["spam", "Es spam"], ["inapropiado", "Es ofensivo"], ["acoso", "Acoso"], ["falso_o_repetido", "Reportes falsos"], ["otro", "Otro"]].map(([k, l]) => <Chip key={k} selected={reason === k} onClick={() => setReason(k)}>{l}</Chip>)}</div>
+                {reportError && <p role="alert" className="mt-3 text-sm font-semibold text-risk-red">{reportError}</p>}
+                <div className="mt-4 grid grid-cols-2 gap-3"><Button variant="outline" onClick={() => setReporting(false)}>Cancelar</Button><Button disabled={!reason} onClick={() => { setReportError(""); denouncePerson(person.id, reason).then(() => setReported(true)).catch((e) => setReportError(e instanceof Error ? e.message : "No pudimos enviar el aviso.")); }}>Enviar</Button></div>
               </>
             )}
           </div>

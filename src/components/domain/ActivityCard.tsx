@@ -10,8 +10,11 @@ import { formatDateTime } from "@/lib/format";
 interface Props {
   /** Id de la actividad: habilita reacciones y comentarios. */
   id?: string;
-  /** Reacciones iniciales de ejemplo. */
-  baseKudos?: number;
+  /** Reacciones totales según el servidor (incluyen la tuya si ya reaccionaste). */
+  kudos?: number;
+  /** Si el servidor ya cuenta tu reacción. */
+  gaveKudo?: boolean;
+  comments?: number;
   name: string;
   /** Si se pasa, el avatar y el nombre enlazan al perfil. */
   personId?: string;
@@ -25,11 +28,10 @@ interface Props {
 }
 
 /** Actividad de otra persona (amigo o comunidad). */
-export function ActivityCard({ id, baseKudos = 0, name, personId, title, km, minutes, safetyScore, at, vehicle, meta }: Props) {
-  const { kudos, toggleKudo, comments } = useSocial();
+export function ActivityCard({ id, kudos: serverKudos = 0, gaveKudo = false, comments: nComments = 0, name, personId, title, km, minutes, safetyScore, at, vehicle, meta }: Props) {
+  const { kudos, toggleKudo } = useSocial();
   const gave = id ? kudos.includes(id) : false;
-  const count = baseKudos + (gave ? 1 : 0);
-  const nComments = id ? comments.filter((c) => c.activityId === id).length : 0;
+  const count = serverKudos - (gaveKudo ? 1 : 0) + (gave ? 1 : 0);
   const Icon = vehicle === "scooter" ? Scooter : Bike;
   return (
     <div className="flex gap-3 border-b border-line bg-white px-4 py-4">
