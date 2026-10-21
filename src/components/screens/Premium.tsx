@@ -32,7 +32,7 @@ export function Premium() {
 
       {subscription.active && (
         <Link href="/premium/suscripcion" className="mx-4 mt-4 flex min-h-[64px] items-center gap-3 rounded-card bg-brand-100 px-4 text-brand-700">
-          <span className="flex-1"><span className="block font-bold">{subscription.cancelled ? "Suscripción cancelada" : "Suscripción activa"}</span><span className="block text-sm">{subscription.cancelled ? "Conservas Premium hasta el 20 de noviembre" : "Administrar mi suscripción"}</span></span>
+          <span className="flex-1"><span className="block font-bold">{subscription.cancelled ? "Suscripción cancelada" : "Suscripción activa"}</span><span className="block text-sm">{subscription.cancelled ? `Conservas Premium hasta el ${subscription.until ? new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "long", timeZone: "America/Monterrey" }).format(new Date(`${subscription.until}T12:00:00-06:00`)) : "fin del periodo"}` : "Administrar mi suscripción"}</span></span>
           <ChevronRight size={20} />
         </Link>
       )}
