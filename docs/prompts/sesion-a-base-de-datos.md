@@ -84,7 +84,7 @@ Revisa que no falte nada del análisis. Como mínimo:
    - Permisos por rol.
    - Mapa "mock a tabla": cómo cada campo de `src/types` y `src/mocks` se obtiene del esquema.
 2. `db/migrations/*.sql`: migraciones numeradas.
-3. `db/seeds/*.sql`: datos de ejemplo **derivados de los mocks** (Daniela Garza y su ruta casa a la UDEM, amigos, rodadas grupales, reportes, clubes, retos, insignias, zonas), insertados sin romper las restricciones y reproducibles.
+3. `db/seeds/*.sql`: datos de demostración **derivados de los mocks** (Daniela Garza y su ruta casa a la UDEM, amigos, rodadas grupales, reportes, clubes, retos, insignias, zonas), insertados sin romper las restricciones y reproducibles. Son solo para ver las pantallas con contenido: se aplican únicamente con `--seed`, **no incluyas posiciones ni trazas simuladas "en vivo"** y márcalos claramente como datos de demostración. La app usará el GPS real de los teléfonos, no vehículos simulados.
 4. `db/apply.sh`: aplica migraciones pendientes en orden, registra cada una en `schema_migrations`, es idempotente y usa variables de entorno (`MIGRATOR_DATABASE_URL`; opcional `--seed`). Debe fallar de forma clara y no dejar la base a medias (cada migración en una transacción).
 5. `db/verify.sql` o `db/tests/*.sql`: **pruebas SQL** que verifiquen restricciones (`CHECK`, `UNIQUE`, FK), que las vistas devuelven lo esperado con los datos de ejemplo y que no existen columnas con arreglos o JSON para hechos multivaluados. Incluye consultas que reproducen lo que muestran las pantallas principales (Inicio, perfil de persona, rodadas grupales, reportes cercanos).
 6. `db/README.md` con el flujo: cómo aplicar, sembrar, verificar y revertir en desarrollo.

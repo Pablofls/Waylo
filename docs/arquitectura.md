@@ -21,7 +21,7 @@ Contrato común para las sesiones de trabajo en paralelo. Si algo de aquí cambi
                        (waylo_db)
 ```
 
-Inspirada en la arquitectura "Rastreo GPS en tiempo real con WebSockets" de la clase: un publicador GPS, un microservicio Flask + Flask-Sock y un mapa que recibe `snapshot` y `update`. En Waylo el publicador es el teléfono (o el modo simulación) y el historial **sí se persiste** en Postgres.
+Inspirada en la arquitectura "Rastreo GPS en tiempo real con WebSockets" de la clase: un publicador GPS, un microservicio Flask + Flask-Sock y un mapa que recibe `snapshot` y `update`. En Waylo el publicador es **el GPS real del teléfono** (Geolocation API del navegador) y el historial **sí se persiste** en Postgres. **No hay vehículos ni posiciones simuladas.**
 
 ## Piezas y puertos
 
@@ -32,6 +32,14 @@ Inspirada en la arquitectura "Rastreo GPS en tiempo real con WebSockets" de la c
 | Base de datos | PostgreSQL 16 + PostGIS | `127.0.0.1:5432` | No |
 
 Puertos que **no** se deben usar (ocupados por otros proyectos de la VM): 22, 25, 80, 443, 3000, 5000, 5002 a 5006, 5432, 5900, 6379, 8000, 55432, 56379.
+
+## GPS real, sin simulación
+
+- La única fuente de posiciones es el GPS del dispositivo: `navigator.geolocation.watchPosition` con `enableHighAccuracy`, descartando lecturas con precisión peor a 30 m y manteniendo la pantalla encendida con Wake Lock.
+- Requiere HTTPS y el permiso de ubicación del usuario; sin ellos la app muestra el aviso de `/permisos/ubicacion` y no envía nada.
+- El servicio en tiempo real no genera ni reproduce movimiento: solo valida, guarda y difunde lo que envían clientes autenticados.
+- El **modo simulación** de la web actual (interruptor en Comenzar y `src/lib/geo/useRide.ts`) existe solo para revisar pantallas en escritorio durante la fase de diseño. La sesión C lo **elimina** de la versión funcional; en escritorio sin GPS se muestra un aviso.
+- Los datos de ejemplo de la base de datos (`db/seeds`) son datos de demostración para ver las pantallas con contenido; se aplican con una bandera explícita, no incluyen posiciones en vivo y no se usan en producción por defecto.
 
 ## Protocolo WebSocket
 
@@ -103,8 +111,7 @@ db/
 services/realtime/
   app.py              Flask + Flask-Sock
   requirements.txt
-  simulator.py        Equivalente al GPSapp de la clase
-  tests/
+  tests/              Pruebas con puntos fijos (no simulan vehículos en movimiento)
 deploy/
   nginx/waylo.conf
   systemd/waylo-web.service, waylo-realtime.service
