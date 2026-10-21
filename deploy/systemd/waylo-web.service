@@ -1,6 +1,9 @@
 [Unit]
 Description=Waylo web y API (Next.js)
 After=network.target postgresql.service
+# Si falla 5 veces en 2 minutos, systemd deja de reintentar (estas opciones van en [Unit]).
+StartLimitIntervalSec=120
+StartLimitBurst=5
 
 [Service]
 Type=simple
@@ -11,8 +14,6 @@ EnvironmentFile=/etc/waylo/waylo.env
 ExecStart=/usr/bin/npm run start -- -H 127.0.0.1 -p ${WEB_PORT}
 Restart=on-failure
 RestartSec=5
-StartLimitIntervalSec=120
-StartLimitBurst=5
 LimitNOFILE=4096
 MemoryMax=768M
 NoNewPrivileges=true

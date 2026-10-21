@@ -1,6 +1,9 @@
 [Unit]
 Description=Waylo tiempo real (Flask + Flask-Sock)
 After=network.target postgresql.service
+# Si falla 5 veces en 2 minutos, systemd deja de reintentar (estas opciones van en [Unit]).
+StartLimitIntervalSec=120
+StartLimitBurst=5
 
 [Service]
 Type=simple
@@ -15,8 +18,6 @@ Environment=PYTHONPATH=/home/pablogcp26/Waylo/services/realtime/.venv/lib/python
 ExecStart=/usr/bin/python3.12 -m gunicorn -w 1 -k gthread --threads 50 -b ${REALTIME_HOST}:${REALTIME_PORT} app:app
 Restart=on-failure
 RestartSec=5
-StartLimitIntervalSec=120
-StartLimitBurst=5
 LimitNOFILE=4096
 MemoryMax=512M
 NoNewPrivileges=true
