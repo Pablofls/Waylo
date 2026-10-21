@@ -1,5 +1,6 @@
 // Capa de acceso a datos para páginas de servidor: toma la persona de la sesión y delega en src/server/*.
 import "server-only";
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { currentUserId } from "@/server/session";
 import { getUserById } from "@/server/cuenta";
@@ -19,15 +20,18 @@ import { zona, zonas } from "@/server/zonas";
 import { puntosDeRiesgo } from "@/server/riesgo";
 import { estadisticaMes, misRodadas, miRodada, resumenRodada } from "@/server/rodadas";
 
+// Una sola consulta de sesión por petición, aunque el layout y la página pidan muchos datos.
+const currentUser = cache(() => currentUserId());
+
 /** Id de la persona con sesión; si no hay, manda a iniciar sesión. */
 export async function sessionUserId(): Promise<string> {
-  const id = await currentUserId();
+  const id = await currentUser();
   if (!id) redirect("/api/auth/sesion-invalida");
   return id;
 }
 
 export async function getOptionalUser() {
-  const id = await currentUserId();
+  const id = await currentUser();
   return id ? getUserById(id) : null;
 }
 
