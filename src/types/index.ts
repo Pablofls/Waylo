@@ -34,6 +34,8 @@ export type RouteKind = "rapida" | "segura" | "equilibrada";
 
 export interface RouteOption {
   id: RouteKind;
+  /** Id de la opción en la base (para guardar la rodada y abrir el desglose). */
+  optionId?: string;
   label: string;
   minutes: number;
   km: number;
@@ -46,6 +48,8 @@ export interface RouteOption {
 }
 
 export interface Place {
+  /** Id del lugar en la base; los lugares escritos a mano no lo tienen. */
+  id?: string;
   name: string;
   detail: string;
   coordinates: LngLat;
@@ -200,6 +204,8 @@ export interface SavedRoute {
   fromName: string;
   toName: string;
   destination: LngLat;
+  /** Id del lugar de destino (para abrir sus rutas en el mapa). */
+  destinationId?: string;
   routeId: RouteKind;
   minutes: number;
   safetyScore: number;
@@ -265,4 +271,22 @@ export interface Zone {
   /** Riesgo 0-100 por franja horaria. */
   hourly: { label: string; risk: number }[];
   summary: string;
+}
+
+// Navegación guiada ----------------------------------------------------------------
+export type TurnType = "recto" | "izquierda" | "derecha" | "llegada";
+
+export interface NavStep {
+  /** Fracción del recorrido (0-1) donde ocurre la maniobra. */
+  at: number;
+  turn: TurnType;
+  text: string;
+}
+
+export interface NavAlert {
+  from: number;
+  to: number;
+  title: string;
+  text: string;
+  tone: "orange" | "red";
 }
