@@ -9,6 +9,8 @@ import { ConfirmSheet } from "@/components/domain/ConfirmSheet";
 import { Segmented } from "@/components/ui/Segmented";
 import { Toggle } from "@/components/ui/Toggle";
 import { useSocial } from "@/lib/social";
+import { Input } from "@/components/ui/Input";
+import { api, errorText } from "@/lib/api";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -37,6 +39,7 @@ export default function ConfiguracionPage() {
   const [visibility, setVisibility] = useState<"todos" | "amigos" | "yo">("amigos");
   const [profilePublic, setProfilePublic] = useState(true);
   const [anonymousReports, setAnonymousReports] = useState(false);
+  const [delPass, setDelPass] = useState("");
   const [confirm, setConfirm] = useState<"salir" | "eliminar" | null>(null);
   const [exported, setExported] = useState(false);
 
@@ -112,8 +115,10 @@ export default function ConfiguracionPage() {
         </div>
       </div>
 
-      <ConfirmSheet open={confirm === "salir"} title="¿Cerrar sesión?" text="Podrás volver a entrar con tu correo y contraseña." confirmLabel="Cerrar sesión" onConfirm={() => router.push("/login")} onClose={() => setConfirm(null)} />
-      <ConfirmSheet open={confirm === "eliminar"} danger title="¿Eliminar tu cuenta?" text="Se borrarán tus rodadas, reportes y amistades. Esta acción no se puede deshacer." confirmLabel="Eliminar cuenta" onConfirm={() => router.push("/")} onClose={() => setConfirm(null)} />
+      <ConfirmSheet open={confirm === "salir"} title="¿Cerrar sesión?" text="Podrás volver a entrar con tu correo y contraseña." confirmLabel="Cerrar sesión" onConfirm={() => { api("/api/auth/logout", "POST").finally(() => { router.replace("/login"); router.refresh(); }); }} onClose={() => setConfirm(null)} />
+      <ConfirmSheet open={confirm === "eliminar"} danger title="¿Eliminar tu cuenta?" text="Se borrarán tus rodadas, reportes y amistades. Esta acción no se puede deshacer." confirmLabel="Eliminar cuenta" confirmDisabled={!delPass} onConfirm={() => { api("/api/auth/cuenta", "DELETE", { contrasena: delPass }).then(() => { router.replace("/"); router.refresh(); }).catch((e) => alert(errorText(e))); setDelPass(""); }} onClose={() => { setDelPass(""); setConfirm(null); }}>
+        <Input className="mt-3" label="Confirma con tu contraseña" type="password" autoComplete="current-password" value={delPass} onChange={(e) => setDelPass(e.target.value)} />
+      </ConfirmSheet>
     </>
   );
 }

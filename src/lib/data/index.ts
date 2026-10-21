@@ -1,5 +1,9 @@
-// Capa de acceso a datos. Hoy devuelve mocks; en fase 2/3 se reemplaza por Supabase y API Routes.
-import { mockUser } from "@/mocks/user";
+// Capa de acceso a datos para páginas de servidor: toma la persona de la sesión y delega en src/server/*.
+// Lo que aún dice "mock" se migra por áreas (ver README).
+import "server-only";
+import { redirect } from "next/navigation";
+import { currentUserId } from "@/server/session";
+import { getUserById } from "@/server/cuenta";
 import { mockRoutes } from "@/mocks/routes";
 import { mockReports, communityReports } from "@/mocks/reports";
 import { mockRides, monthStats, communityRides } from "@/mocks/rides";
@@ -18,7 +22,23 @@ import { SEARCH_HISTORY, PLACES, HOME, UNIVERSITY, MONTERREY_CENTER } from "@/mo
 
 const wait = <T,>(v: T) => Promise.resolve(v);
 
-export const getUser = () => wait(mockUser);
+/** Id de la persona con sesión; si no hay, manda a iniciar sesión. */
+export async function sessionUserId(): Promise<string> {
+  const id = await currentUserId();
+  if (!id) redirect("/api/auth/sesion-invalida");
+  return id;
+}
+
+export async function getOptionalUser() {
+  const id = await currentUserId();
+  return id ? getUserById(id) : null;
+}
+
+export async function getUser() {
+  const u = await getOptionalUser();
+  if (!u) redirect("/api/auth/sesion-invalida");
+  return u;
+}
 export const getRoutes = () => wait(mockRoutes);
 export const getRoute = (id: string) => wait(mockRoutes.find((r) => r.id === id) ?? null);
 export const getUsualRoute = () => wait({ origin: HOME, destination: UNIVERSITY, route: mockRoutes.find((r) => r.id === "segura")!, newAlerts: 2 });

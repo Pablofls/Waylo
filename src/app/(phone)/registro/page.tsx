@@ -8,6 +8,7 @@ import { Stepper } from "@/components/ui/Stepper";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Slider } from "@/components/ui/Slider";
+import { api, errorText } from "@/lib/api";
 import type { MainUse, Vehicle } from "@/types";
 
 const TOTAL = 5;
@@ -37,9 +38,34 @@ export default function RegistroPage() {
   const [use, setUse] = useState<MainUse>("transporte");
   const [pref, setPref] = useState(70);
   const [extra, setExtra] = useState(10);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [pass, setPass] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  const finish = () => router.push("/verificar");
-  const next = () => (step < TOTAL ? setStep(step + 1) : finish());
+  const finish = async () => {
+    setError("");
+    setBusy(true);
+    try {
+      await api("/api/auth/registro", "POST", { nombre: name, correo: email, contrasena: pass, vehiculo: vehicle, uso: use, inclinacion: pref, minutosExtra: extra });
+      router.replace("/verificar");
+      router.refresh();
+    } catch (e) {
+      setError(errorText(e));
+      setBusy(false);
+      setStep(1);
+    }
+  };
+  const next = () => {
+    if (step === 1) {
+      if (!name.trim()) return setError("Escribe tu nombre.");
+      if (!/\S+@\S+\.\S+/.test(email)) return setError("Escribe un correo válido.");
+      if (pass.length < 8) return setError("La contraseña debe tener al menos 8 caracteres.");
+    }
+    setError("");
+    if (step < TOTAL) setStep(step + 1);
+  };
   const prefText = pref < 34 ? "Prioriza llegar rápido, aunque pases por calles con más riesgo." : pref < 67 ? "Equilibra tiempo y seguridad en cada trayecto." : "Prioriza ciclovías y calles tranquilas, aunque tardes más.";
 
   return (
@@ -53,9 +79,10 @@ export default function RegistroPage() {
         {step === 1 && (
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">Cuéntanos de ti</h2>
-            <Input label="Nombre completo" autoComplete="name" defaultValue="Daniela Garza" />
-            <Input label="Correo electrónico" type="email" autoComplete="email" defaultValue="daniela.garza@correo.com" />
-            <Input label="Contraseña" type="password" autoComplete="new-password" defaultValue="waylo2026" hint="Mínimo 8 caracteres." />
+            <Input label="Nombre completo" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} />
+            <Input label="Correo electrónico" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input label="Contraseña" type="password" autoComplete="new-password" value={pass} onChange={(e) => setPass(e.target.value)} hint="Mínimo 8 caracteres." />
+            {error && <p role="alert" className="text-sm font-semibold text-risk-red">{error}</p>}
             <p className="text-xs text-muted">Al continuar aceptas los <a href="/legal/terminos" className="font-semibold text-brand-600 underline">términos</a> y el <a href="/legal/privacidad" className="font-semibold text-brand-600 underline">aviso de privacidad</a>.</p>
           </div>
         )}
@@ -130,17 +157,19 @@ export default function RegistroPage() {
           <Button full size="lg" onClick={next}>Continuar</Button>
         ) : (
           <>
+            {error && <p role="alert" className="text-sm font-semibold text-risk-red">{error}</p>}
             <Button
               full
               size="lg"
+              disabled={busy}
               onClick={() => {
-                navigator.geolocation?.getCurrentPosition(finish, finish, { timeout: 8000 });
-                if (!navigator.geolocation) finish();
+                if (!navigator.geolocation) return void finish();
+                navigator.geolocation.getCurrentPosition(() => void finish(), () => void finish(), { timeout: 8000 });
               }}
             >
               Permitir ubicación
             </Button>
-            <Button full variant="ghost" onClick={finish}>Ahora no</Button>
+            <Button full variant="ghost" disabled={busy} onClick={() => void finish()}>Ahora no</Button>
           </>
         )}
         {step > 1 && <Button full variant="ghost" onClick={() => setStep(step - 1)}>Atrás</Button>}

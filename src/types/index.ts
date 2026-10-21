@@ -6,7 +6,7 @@ export type MainUse = "transporte" | "recreativo";
 export interface User {
   id: string;
   name: string;
-  age: number;
+  age?: number;
   occupation: string;
   city: string;
   email: string;

@@ -43,7 +43,7 @@ export function Profile({ stats, badges, confirmedReports }: Props) {
           <span className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-100 font-display text-3xl font-bold text-brand-900">{initials}</span>
           <div>
             <h1 className="text-2xl font-bold leading-tight">{user.name}</h1>
-            <p className="text-sm text-white/70">{user.occupation} · {user.age} años · {user.city}</p>
+            <p className="text-sm text-white/70">{[user.occupation, user.age ? `${user.age} años` : "", user.city].filter(Boolean).join(" · ")}</p>
           </div>
         </div>
       </header>

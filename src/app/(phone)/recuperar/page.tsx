@@ -6,6 +6,7 @@ import { ScreenHeader } from "@/components/layout/ScreenHeader";
 import { Stepper } from "@/components/ui/Stepper";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { api, errorText } from "@/lib/api";
 
 export default function RecuperarPage() {
   const [step, setStep] = useState(1);
@@ -15,15 +16,37 @@ export default function RecuperarPage() {
   const [pass2, setPass2] = useState("");
   const [error, setError] = useState("");
 
+  const [busy, setBusy] = useState(false);
+
   const fail = (m: string) => setError(m);
-  const next = () => {
+  const request = async () => {
+    await api("/api/auth/recuperar", "POST", { correo: email });
+  };
+  const next = async () => {
     setError("");
-    if (step === 1) return /\S+@\S+\.\S+/.test(email) ? setStep(2) : fail("Escribe un correo válido.");
-    if (step === 2) return /^\d{6}$/.test(code) ? setStep(3) : fail("El código tiene 6 dígitos.");
-    if (step === 3) {
-      if (pass.length < 8) return fail("La contraseña debe tener al menos 8 caracteres.");
-      if (pass !== pass2) return fail("Las contraseñas no coinciden.");
-      setStep(4);
+    setBusy(true);
+    try {
+      if (step === 1) {
+        if (!/\S+@\S+\.\S+/.test(email)) return fail("Escribe un correo válido.");
+        await request();
+        return setStep(2);
+      }
+      if (step === 2) return /^\d{6}$/.test(code) ? setStep(3) : fail("El código tiene 6 dígitos.");
+      if (step === 3) {
+        if (pass.length < 8) return fail("La contraseña debe tener al menos 8 caracteres.");
+        if (pass !== pass2) return fail("Las contraseñas no coinciden.");
+        try {
+          await api("/api/auth/restablecer", "POST", { correo: email, codigo: code, contrasena: pass });
+          setStep(4);
+        } catch (e) {
+          setStep(2);
+          fail(errorText(e));
+        }
+      }
+    } catch (e) {
+      fail(errorText(e));
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -44,22 +67,22 @@ export default function RecuperarPage() {
     <>
       <ScreenHeader title="Recuperar contraseña" back="/login" />
       <div className="px-4 pb-2"><Stepper step={step} total={3} /></div>
-      <form onSubmit={(e) => { e.preventDefault(); next(); }} className="flex flex-1 flex-col">
+      <form onSubmit={(e) => { e.preventDefault(); void next(); }} className="flex flex-1 flex-col">
         <div className="flex-1 space-y-4 overflow-y-auto px-4 pt-5">
           {step === 1 && (
             <>
               <h2 className="text-2xl font-bold">¿Cuál es tu correo?</h2>
               <p className="text-sm text-muted">Te enviaremos un código de 6 dígitos para restablecer tu contraseña.</p>
-              <Input label="Correo electrónico" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="daniela.garza@correo.com" />
+              <Input label="Correo electrónico" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@correo.com" />
             </>
           )}
           {step === 2 && (
             <>
               <span className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-100 text-brand-600"><MailCheck size={28} /></span>
               <h2 className="text-2xl font-bold">Revisa tu correo</h2>
-              <p className="text-sm text-muted">Enviamos un código a <strong className="text-ink">{email}</strong>. Caduca en 10 minutos.</p>
+              <p className="text-sm text-muted">Enviamos un código a <strong className="text-ink">{email}</strong>. Caduca en 15 minutos.</p>
               <Input label="Código de 6 dígitos" inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} placeholder="000000" />
-              <button type="button" className="min-h-[44px] text-sm font-semibold text-brand-600">Reenviar código</button>
+              <button type="button" onClick={() => { setError(""); request().catch((e) => fail(errorText(e))); }} className="min-h-[44px] text-sm font-semibold text-brand-600">Reenviar código</button>
             </>
           )}
           {step === 3 && (
@@ -70,10 +93,9 @@ export default function RecuperarPage() {
             </>
           )}
           {error && <p role="alert" className="text-sm font-semibold text-risk-red">{error}</p>}
-          <p className="text-xs text-muted">Pantalla de demostración: no se envía ningún correo ni se valida el código.</p>
         </div>
         <div className="pb-safe border-t border-line bg-white px-4 pt-3">
-          <Button type="submit" full size="lg">{step === 3 ? "Guardar contraseña" : "Continuar"}</Button>
+          <Button type="submit" full size="lg" disabled={busy}>{step === 3 ? "Guardar contraseña" : "Continuar"}</Button>
           <div className="h-3" />
         </div>
       </form>
