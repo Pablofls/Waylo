@@ -14,9 +14,9 @@ Reglas comunes para todas:
 
 ## Sesión A: Base de datos (rama `db-esquema`)
 
-**Prompt**
+El prompt completo, con el requisito de **normalización hasta 4FN**, está en [`docs/prompts/sesion-a-base-de-datos.md`](prompts/sesion-a-base-de-datos.md). En una sesión nueva, escribe:
 
-> Lee `docs/arquitectura.md`, `docs/vm-setup.md` y los tipos y mocks de `src/types` y `src/mocks`, que muestran todos los datos que maneja la app. Diseña el esquema PostgreSQL (con PostGIS si está disponible) para `waylo_db`: usuarios y perfiles, sesiones, vehículos, rodadas y puntos de traza (`ride_points`), reportes con historial de estado y confirmaciones, amistades y solicitudes, bloqueos, rodadas grupales y asistentes, clubes y miembros, retos, notificaciones, lugares y rutas guardadas, contactos de emergencia, comentarios y reacciones, suscripciones y pagos, y comparticiones de ubicación en vivo. Entrega: `docs/base-de-datos.md` con diagrama (Mermaid) y decisiones, migraciones SQL numeradas en `db/migrations`, datos de ejemplo en `db/seeds` derivados de los mocks, índices espaciales y de consulta, permisos para los roles `waylo_user` y `waylo_app`, y `db/apply.sh` idempotente. Explícame cada decisión importante y deja los comandos para correr en la VM.
+> Analiza la aplicación y ejecuta `docs/prompts/sesion-a-base-de-datos.md`.
 
 ---
 
