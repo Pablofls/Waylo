@@ -12,6 +12,8 @@ interface Props {
 }
 
 export function RouteOptionCard({ route, selected, recommended, href, onSelect }: Props) {
+  // El factor más bajo, solo si de verdad baja la calificación.
+  const weakest = [...route.factors].sort((a, b) => a.score - b.score).find((f) => f.score < 70);
   const body = (
     <>
       <div className="flex items-start justify-between gap-3">
@@ -36,6 +38,16 @@ export function RouteOptionCard({ route, selected, recommended, href, onSelect }
         <p className="ml-auto pb-0.5 text-sm font-semibold text-muted">{route.extraMinutes === 0 ? "La más corta" : `+${route.extraMinutes} min`}</p>
         {href && <ChevronRight size={20} className="mb-1 text-muted" />}
       </div>
+      {(route.reportsOnRoute !== undefined || weakest) && (
+        <div className="mt-3 flex flex-wrap gap-1.5 text-xs font-semibold">
+          {route.reportsOnRoute !== undefined && (
+            <span className={`rounded-full px-2 py-1 ${route.reportsOnRoute === 0 ? "bg-brand-100 text-brand-700" : "bg-canvas text-ink"}`}>
+              {route.reportsOnRoute === 0 ? "Sin reportes recientes" : `${route.reportsOnRoute} ${route.reportsOnRoute === 1 ? "reporte" : "reportes"} en el trayecto`}
+            </span>
+          )}
+          {weakest && <span className="rounded-full bg-canvas px-2 py-1 text-ink">Punto débil: {weakest.label.toLowerCase()}</span>}
+        </div>
+      )}
     </>
   );
   const cls = `block w-full rounded-card border bg-white p-4 text-left ${selected ? "border-2 border-brand-600" : "border-line"}`;

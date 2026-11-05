@@ -6,15 +6,24 @@ import { lugarVisible, resolverLugar, placeInput } from "./lugares";
 import type { NavAlert, NavStep } from "@/types";
 import type { LngLat, Place, RiskFactor, RiskKey, RouteKind, RouteOption, SavedRoute } from "@/types";
 
-type OptionRow = { opcion_id: string; consulta_id: string; tipo_ruta_clave: RouteKind; tipo_nombre: string; minutos: number; via: string; resumen: string; km: string; minutos_extra: number; safety_score: number | null; trazo: string };
+export type OptionRow = { opcion_id: string; consulta_id: string; tipo_ruta_clave: RouteKind; tipo_nombre: string; minutos: number; via: string; resumen: string; km: string; minutos_extra: number; safety_score: number | null; trazo: string };
 
-async function withFactors(rows: OptionRow[]): Promise<RouteOption[]> {
+export async function withFactors(rows: OptionRow[]): Promise<RouteOption[]> {
   if (rows.length === 0) return [];
-  const factors = await query<{ opcion_id: string; factor_clave: RiskKey; nombre: string; calificacion: number; explicacion: string }>(
-    `SELECT f.opcion_id, f.factor_clave, c.nombre, f.calificacion, f.explicacion FROM ruta_opcion_factor f JOIN cat_factor_seguridad c ON c.clave = f.factor_clave
-     WHERE f.opcion_id = ANY($1::uuid[]) ORDER BY c.orden`,
-    [rows.map((r) => r.opcion_id)],
-  );
+  const ids = rows.map((r) => r.opcion_id);
+  const [factors, reports] = await Promise.all([
+    query<{ opcion_id: string; factor_clave: RiskKey; nombre: string; calificacion: number; explicacion: string }>(
+      `SELECT f.opcion_id, f.factor_clave, c.nombre, f.calificacion, f.explicacion FROM ruta_opcion_factor f JOIN cat_factor_seguridad c ON c.clave = f.factor_clave
+       WHERE f.opcion_id = ANY($1::uuid[]) ORDER BY c.orden`,
+      [ids],
+    ),
+    query<{ opcion_id: string; n: number }>(
+      `SELECT o.id AS opcion_id, count(r.id)::int AS n FROM ruta_opcion o
+       LEFT JOIN reporte r ON ST_DWithin(o.trazo, r.geog, 60) AND r.cancelado_en IS NULL AND r.creado_en > now() - interval '30 days'
+       WHERE o.id = ANY($1::uuid[]) GROUP BY o.id`,
+      [ids],
+    ),
+  ]);
   return rows.map((r) => ({
     id: r.tipo_ruta_clave,
     optionId: r.opcion_id,
@@ -26,11 +35,12 @@ async function withFactors(rows: OptionRow[]): Promise<RouteOption[]> {
     via: r.via,
     summary: r.resumen,
     coordinates: lineFromGeoJSON(r.trazo),
+    reportsOnRoute: reports.find((x) => x.opcion_id === r.opcion_id)?.n ?? 0,
     factors: factors.filter((f) => f.opcion_id === r.opcion_id).map<RiskFactor>((f) => ({ key: f.factor_clave, label: f.nombre, score: f.calificacion, explanation: f.explicacion })),
   }));
 }
 
-const OPTION_SQL = `SELECT o.opcion_id, o.consulta_id, o.tipo_ruta_clave, o.tipo_nombre, o.minutos, o.via, o.resumen, o.km, o.minutos_extra, o.safety_score, ST_AsGeoJSON(o.trazo::geometry) AS trazo
+export const OPTION_SQL = `SELECT o.opcion_id, o.consulta_id, o.tipo_ruta_clave, o.tipo_nombre, o.minutos, o.via, o.resumen, o.km, o.minutos_extra, o.safety_score, ST_AsGeoJSON(o.trazo::geometry) AS trazo
                     FROM v_ruta_opcion o JOIN cat_tipo_ruta t ON t.clave = o.tipo_ruta_clave`;
 
 /**
@@ -69,15 +79,24 @@ export async function navegacion(uid: string, opcionId: string): Promise<{ steps
      FROM ruta_opcion_maniobra m JOIN ruta_opcion o ON o.id = m.opcion_id WHERE m.opcion_id = $1 ORDER BY m.orden`,
     [opcionId],
   );
-  const reps = await query<{ fraccion: number; categoria: string; referencia: string | null; metros: number }>(
-    `SELECT ST_LineLocatePoint(o.trazo::geometry, r.geog::geometry) AS fraccion, c.nombre AS categoria, r.referencia, ST_Distance(o.trazo, r.geog) AS metros
+  const reps = await query<{ id: string; fraccion: number; categoria: string; referencia: string | null; metros: number; peso: number }>(
+    `SELECT r.id, ST_LineLocatePoint(o.trazo::geometry, r.geog::geometry) AS fraccion, c.nombre AS categoria, r.referencia, ST_Distance(o.trazo, r.geog) AS metros, c.peso_riesgo::float AS peso
      FROM ruta_opcion o JOIN reporte r ON ST_DWithin(o.trazo, r.geog, 80) JOIN cat_categoria_reporte c ON c.clave = r.categoria_clave
      WHERE o.id = $1 AND r.cancelado_en IS NULL AND r.creado_en > now() - interval '30 days' ORDER BY fraccion LIMIT 8`,
     [opcionId],
   );
   return {
     steps: steps.map((s) => ({ at: s.fraccion, turn: s.giro, text: s.texto })),
-    alerts: reps.map((r) => ({ from: Math.max(0, r.fraccion - 0.08), to: Math.min(1, r.fraccion + 0.02), title: `${r.categoria} adelante`, text: r.referencia ?? "Reportado por la comunidad en tu ruta.", tone: "orange" as const })),
+    // Rojo para lo más grave (robo, accidente: peso 3 en cat_categoria_reporte).
+    alerts: reps.map((r) => ({
+      id: r.id,
+      at: r.fraccion,
+      from: Math.max(0, r.fraccion - 0.08),
+      to: Math.min(1, r.fraccion + 0.02),
+      title: r.categoria,
+      text: r.referencia ?? "Reportado por la comunidad en tu ruta.",
+      tone: Number(r.peso) >= 3 ? ("red" as const) : ("orange" as const),
+    })),
   };
 }
 

@@ -9,6 +9,9 @@ import { lineFromGeoJSON, isUuid } from "@/server/geo";
 import { registroSchema } from "@/server/cuenta";
 import { crearReporteInput } from "@/server/reportes";
 import { placeInput } from "@/server/lugares";
+import { cuadroEvitar, fraccionExtra, giroDesdeORS, type Candidato } from "@/server/ors";
+import { clasificar, factoresDeRuta, puntajeAjustado, recomendar, sinDuplicados, type Evaluado, type Preferencias } from "@/server/motor-rutas";
+import type { RouteOption } from "@/types";
 
 describe("contraseñas y tokens", () => {
   it("hace hash con argon2 y verifica", async () => {
@@ -101,5 +104,79 @@ describe("validaciones de entrada", () => {
   it("un lugar exige coordenadas válidas", () => {
     expect(placeInput.safeParse({ name: "UDEM", coordinates: [-100.417, 25.66] }).success).toBe(true);
     expect(placeInput.safeParse({ name: "", coordinates: [-100.417, 25.66] }).success).toBe(false);
+  });
+});
+
+describe("motor de rutas", () => {
+  const prefs: Preferencias = { inclinacion: 50, minutosExtra: 10, evitar: [], preferir: [] };
+  const ev = (minutos: number, riesgo: number, extra: Partial<Evaluado> = {}): Evaluado => ({
+    minutos,
+    factores: factoresDeRuta(riesgo > 0 ? [{ categoria: "robo", n: riesgo, peso: riesgo * 3 }] : [], 3, 0),
+    fraccionCiclovia: 0,
+    fraccionViaRapida: 0,
+    cruzaZonaRoja: false,
+    ...extra,
+  });
+
+  it("traduce las maniobras de ORS al catálogo de giros", () => {
+    expect(giroDesdeORS(0)).toBe("izquierda");
+    expect(giroDesdeORS(13)).toBe("derecha");
+    expect(giroDesdeORS(10)).toBe("llegada");
+    expect(giroDesdeORS(6)).toBe("recto");
+    expect(giroDesdeORS(7)).toBe("recto");
+  });
+
+  it("arma cuadros cerrados para evitar y mide la fracción de un tipo de vía", () => {
+    const c = cuadroEvitar([-100.4, 25.65], 120);
+    expect(c).toHaveLength(5);
+    expect(c[0]).toEqual(c[4]);
+    const coords: [number, number][] = [[0, 0], [1, 0], [2, 0], [3, 0]];
+    expect(fraccionExtra({ values: [[0, 1, 6], [1, 3, 3]] }, coords, (v) => v === 6)).toBeCloseTo(1 / 3);
+    expect(fraccionExtra(undefined, coords, () => true)).toBe(0);
+  });
+
+  it("califica los factores según los reportes por km", () => {
+    const limpio = factoresDeRuta([], 4, 0.5);
+    expect(limpio.find((f) => f.key === "robo")?.calificacion).toBe(100);
+    expect(limpio.find((f) => f.key === "ciclovia")?.calificacion).toBe(68);
+    const conRobos = factoresDeRuta([{ categoria: "robo", n: 4, peso: 12 }], 2, 0);
+    expect(conRobos.find((f) => f.key === "robo")!.calificacion).toBeLessThan(50);
+    expect(conRobos.find((f) => f.key === "robo")!.explicacion).toMatch(/4 reportes/);
+    expect(conRobos.find((f) => f.key === "pavimento")!.calificacion).toBe(100);
+  });
+
+  it("elige rápida, segura y equilibrada respetando el tope de minutos extra", () => {
+    const cs = [ev(10, 4), ev(14, 0), ev(30, 0), ev(12, 2)];
+    const k = clasificar(cs, prefs, false);
+    expect(k.rapida).toBe(0);
+    expect(k.segura).toBe(1); // la de 30 min supera el tope de 10 min extra
+    expect(k.equilibrada).toBe(3);
+    expect(k.excedeTope).toBe(false);
+    const sinTope = clasificar(cs, { ...prefs, minutosExtra: 0 }, false);
+    expect(sinTope.segura).toBe(0);
+  });
+
+  it("descarta rutas por zonas rojas y pondera la iluminación de noche", () => {
+    const cs = [ev(10, 0, { cruzaZonaRoja: true }), ev(13, 1)];
+    expect(clasificar(cs, prefs, false).segura).toBe(0);
+    expect(clasificar(cs, { ...prefs, evitar: ["zonas_riesgo_alto"] }, false).segura).toBe(1);
+    const oscura: Evaluado = { ...ev(10, 0), factores: factoresDeRuta([{ categoria: "poca_iluminacion", n: 3, peso: 6 }], 2, 0) };
+    const p = { ...prefs, evitar: ["calles_sin_iluminacion"] };
+    expect(puntajeAjustado(oscura, p, true)).toBeLessThan(puntajeAjustado(oscura, p, false));
+    expect(puntajeAjustado(ev(10, 0, { fraccionCiclovia: 1 }), { ...prefs, preferir: ["ciclovias_confinadas"] }, false)).toBeGreaterThan(puntajeAjustado(ev(10, 0, { fraccionCiclovia: 1 }), prefs, false));
+  });
+
+  it("recomienda según la inclinación por la seguridad", () => {
+    const op = (id: RouteOption["id"], minutes: number, safetyScore: number): RouteOption => ({ id, label: id, minutes, km: 3, safetyScore, extraMinutes: minutes - 10, via: "", coordinates: [], factors: [], summary: "" });
+    const ops = [op("rapida", 10, 55), op("equilibrada", 12, 75), op("segura", 18, 92)];
+    expect(recomendar(ops, { inclinacion: 100, minutosExtra: 10 })).toBe("segura");
+    expect(recomendar(ops, { inclinacion: 0, minutosExtra: 10 })).toBe("rapida");
+    expect(recomendar(ops, { inclinacion: 100, minutosExtra: 5 })).toBe("equilibrada");
+    expect(recomendar([], prefs)).toBeNull();
+  });
+
+  it("quita alternativas casi iguales", () => {
+    const linea = (dy: number): Candidato => ({ coords: [[-100.40, 25.65 + dy], [-100.39, 25.65 + dy], [-100.38, 25.65 + dy]], segundos: 600, metros: 2000, pasos: [], via: "", fraccionCiclovia: 0, fraccionViaRapida: 0 });
+    expect(sinDuplicados([linea(0), linea(0.0001), linea(0.01)])).toHaveLength(2);
   });
 });

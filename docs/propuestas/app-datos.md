@@ -9,10 +9,12 @@ Cambios o decisiones que la sesión C **no** pudo resolver dentro de `src/**` y 
 - `UPLOADS_DIR` debe existir fuera del repositorio, con escritura para el usuario del servicio web (fotos de reportes, máx. 5 MB). Agregar `uploads/` a `.gitignore` por si se usa el valor por omisión en desarrollo. Si Apache limita el cuerpo de las peticiones, permitir ≥ 6 MB en `/api/reportes/*/foto`.
 - La app confía en `x-forwarded-for` / `x-forwarded-host` de Apache para los límites de intentos y la verificación de origen: Apache debe sobrescribirlos (no reenviar los del cliente) y pasar `Host`.
 
-## 2. Motor de rutas (contrato / producto)
+## 2. Motor de rutas (resuelto en el Sprint 2)
 
-Hoy `ruta_consulta` / `ruta_opcion` solo contienen lo ya calculado (semillas de demostración). La app sirve la consulta más reciente hacia el lugar elegido (`src/server/rutas.ts: opcionesHacia`) y, si no hay, dice "Aún no tenemos rutas para este destino".
-Falta decidir el proveedor (OpenRouteService, Valhalla, OSRM) y quién escribe esas filas: propongo una función `calcularRutas(origen, destino)` en `src/server/rutas.ts` que consulte al proveedor, inserte la consulta con sus 3 opciones y factores, y que el servidor la invoque al elegir destino. También permite recalcular al desviarse (hoy solo se avisa que te desviaste).
+`calcularRutas` en `src/server/motor-rutas.ts` usa OpenRouteService (`ORS_API_KEY`), califica con los reportes, aplica las preferencias y guarda en `ruta_consulta` / `ruta_opcion`; la rodada guiada recalcula al desviarse. Queda pendiente:
+- "Rutas personalizadas" (Premium): aprender de los recorridos habituales.
+- Geocodificación de direcciones escritas a mano (hoy se elige de la lista de lugares o de un punto del mapa).
+- Al recalcular, la rodada conserva `ruta_opcion_id` de la ruta original (su Safety Score es el de esa ruta).
 
 ## 3. Safety Score de una rodada libre
 

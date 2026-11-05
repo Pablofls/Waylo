@@ -1,5 +1,5 @@
 import { jwtVerify } from "jose";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/server/session", () => ({
   SESSION_COOKIE: "waylo_session",
@@ -236,5 +236,71 @@ describe("fotos de reportes", () => {
     const put = (await import("@/app/api/reportes/[id]/foto/route")).PUT;
     const res = await put(req("PUT", "x", { "Content-Length": String(6 * 1024 * 1024), "Content-Type": "image/jpeg" }), ctx(REPORT));
     expect(res.status).toBe(413);
+  });
+});
+
+describe("motor de rutas (API)", () => {
+  const destino = { name: "Fundidora", coordinates: [-100.285, 25.678] };
+  const origen = { name: "Mi ubicación", coordinates: [-100.317, 25.687] };
+  const calcular = async (b: unknown) => (await import("@/app/api/rutas/calcular/route")).POST(req("POST", b), undefined);
+  const orsFeature = (dy: number, segundos: number) => ({
+    geometry: { coordinates: [[-100.317, 25.687 + dy], [-100.3, 25.68 + dy], [-100.285, 25.678]] },
+    properties: { summary: { distance: 3500 + dy * 1e5, duration: segundos }, segments: [{ steps: [{ distance: 3500, type: 11, instruction: "Dirígete al este por Constitución", name: "Constitución", way_points: [0, 1] }, { distance: 0, type: 10, instruction: "Llegada", name: "-", way_points: [2, 2] }] }], extras: { waytypes: { values: [[0, 2, 3]] } } },
+  });
+  afterEach(() => {
+    delete process.env.ORS_API_KEY;
+    vi.unstubAllGlobals();
+  });
+
+  it("exige sesión y datos válidos", async () => {
+    as(null);
+    expect((await calcular({ origen, destino })).status).toBe(401);
+    as(ME);
+    expect((await calcular({ origen, destino: { name: "París", coordinates: [2.35, 48.85] } })).status).toBe(400);
+    const recalcular = (await import("@/app/api/rutas/recalcular/route")).POST;
+    expect((await recalcular(req("POST", { opcionId: "x", lng: -100.3, lat: 25.68 }), undefined)).status).toBe(400);
+  });
+
+  it("sin llave del proveedor responde con un aviso, sin llamar a nadie", async () => {
+    as(ME);
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const res = await calcular({ origen, destino });
+    expect(res.status).toBe(200);
+    expect((await json(res)).aviso).toMatch(/no está configurado/);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("si el proveedor falla usa el respaldo y luego aplica el límite de intentos", async () => {
+    as(ME);
+    process.env.ORS_API_KEY = "prueba";
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("sin red")));
+    const res = await calcular({ origen, destino });
+    expect(res.status).toBe(200);
+    expect((await json(res)).aviso).toMatch(/No pudimos calcular/);
+    for (let i = 0; i < 29; i++) await calcular({ origen, destino });
+    expect((await calcular({ origen, destino })).status).toBe(429);
+  });
+
+  it("guarda la consulta con sus tres opciones, factores y maniobras", async () => {
+    as(ME);
+    process.env.ORS_API_KEY = "prueba";
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ features: [orsFeature(0, 600), orsFeature(0.01, 780)] }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const sqls: string[] = [];
+    const client = { query: vi.fn(async (sql: string) => (sqls.push(sql), { rows: [{ id: RIDE }] })) };
+    vi.mocked(tx).mockImplementation(async (fn) => fn(client as never));
+    vi.mocked(queryOne).mockImplementation(async (sql: string) => (sql.includes("INSERT INTO lugar") ? { id: crypto.randomUUID() } : sql.includes("EXISTS") ? { cruza: false } : null));
+    const res = await calcular({ origen, destino });
+    expect(res.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(1); // sin reportes graves cerca no hay segunda petición
+    expect(sqls.filter((q) => q.includes("INSERT INTO ruta_consulta"))).toHaveLength(1);
+    expect(sqls.filter((q) => q.includes("INSERT INTO ruta_opcion ("))).toHaveLength(3);
+    expect(sqls.filter((q) => q.includes("INSERT INTO ruta_opcion_factor"))).toHaveLength(3);
+    expect(sqls.filter((q) => q.includes("INSERT INTO ruta_opcion_maniobra"))).toHaveLength(3);
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body as string);
+    expect(body.coordinates).toEqual([origen.coordinates, destino.coordinates]);
+    expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe("prueba");
   });
 });

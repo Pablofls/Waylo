@@ -45,6 +45,8 @@ export interface RouteOption {
   coordinates: LngLat[];
   factors: RiskFactor[];
   summary: string;
+  /** Reportes vigentes (30 días) a menos de 60 m del trazo. */
+  reportsOnRoute?: number;
 }
 
 export interface Place {
@@ -111,6 +113,13 @@ export interface BadgeInfo {
 
 export interface RiskPointProps {
   weight: number;
+}
+
+/** Propiedades del polígono de una zona en el mapa. */
+export interface ZoneShapeProps {
+  id: string;
+  name: string;
+  score: number;
 }
 
 export interface FriendActivity {
@@ -309,6 +318,10 @@ export interface NavStep {
 }
 
 export interface NavAlert {
+  /** Id del reporte (para saber si un aviso es nuevo). */
+  id?: string;
+  /** Fracción del recorrido donde está el reporte. */
+  at?: number;
   from: number;
   to: number;
   title: string;

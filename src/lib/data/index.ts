@@ -16,7 +16,7 @@ import { notificaciones } from "@/server/notificaciones";
 import { configCaidas, misContactos } from "@/server/seguridad";
 import { areasMapa, miComparticion, misMapas, quienComparteConmigo } from "@/server/mapas";
 import { miPago, misPagos, miSuscripcion, precioPlan } from "@/server/premium";
-import { zona, zonas } from "@/server/zonas";
+import { zona, zonas, zonasGeo } from "@/server/zonas";
 import { puntosDeRiesgo } from "@/server/riesgo";
 import { estadisticaMes, misRodadas, miRodada, resumenRodada } from "@/server/rodadas";
 
@@ -92,6 +92,7 @@ export const getLiveShare = async () => miComparticion(await sessionUserId());
 export const getSharers = async () => quienComparteConmigo(await sessionUserId());
 export const getZones = () => zonas();
 export const getZone = (id: string) => zona(id);
+export const getZoneShapes = () => zonasGeo();
 
 export async function getUser() {
   const u = await getOptionalUser();
