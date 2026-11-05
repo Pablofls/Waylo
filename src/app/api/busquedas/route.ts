@@ -4,7 +4,7 @@ import { agregarBusqueda, limpiarBusquedas } from "@/server/lugares";
 
 export const POST = route(async (req) => {
   const uid = await requireUser();
-  const { lugarId } = await body(req, z.object({ lugarId: z.string().uuid() }));
+  const { lugarId } = await body(req, z.object({ lugarId: z.guid() }));
   await agregarBusqueda(uid, lugarId);
 });
 

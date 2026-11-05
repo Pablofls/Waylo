@@ -53,7 +53,7 @@ export async function miComparticion(uid: string): Promise<LiveShare | null> {
   return { id: first, with: mine.map((r) => r.nombre.split(" ")[0]), withIds: mine.map((r) => r.destinatario_id), hours: mine[0].horas };
 }
 
-export const comparticionInput = z.object({ destinatarios: z.array(z.string().uuid()).min(1, "Elige con quién compartir.").max(20), horas: z.union([z.literal(1), z.literal(4)]).nullable() });
+export const comparticionInput = z.object({ destinatarios: z.array(z.guid()).min(1, "Elige con quién compartir.").max(20), horas: z.union([z.literal(1), z.literal(4)]).nullable() });
 
 export async function iniciarComparticion(uid: string, d: z.infer<typeof comparticionInput>): Promise<void> {
   // Solo se comparte con amigos.

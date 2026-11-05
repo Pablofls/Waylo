@@ -87,7 +87,7 @@ export const rodadaGrupalInput = z.object({
   titulo: z.string().trim().min(4, "Escribe un nombre de al menos 4 caracteres.").max(60),
   descripcion: z.string().trim().max(300).default(""),
   fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}-06:00$/, "Fecha no válida."),
-  lugarSalidaId: z.string().uuid(),
+  lugarSalidaId: z.guid(),
   nivel: z.enum(["Principiante", "Intermedio", "Avanzado"]),
   ritmo: z.enum(["Relajado", "Moderado", "Rápido"]),
   vehiculo: z.enum(["bicicleta", "scooter", "ambos"]),
@@ -95,8 +95,8 @@ export const rodadaGrupalInput = z.object({
   cupo: z.number().int().min(2).max(500).nullable().optional(),
   privacidad: z.enum(["publica", "amigos"]),
   reglas: z.array(z.string().max(60)).max(20),
-  invitados: z.array(z.string().uuid()).max(100).default([]),
-  clubId: z.string().uuid().optional(),
+  invitados: z.array(z.guid()).max(100).default([]),
+  clubId: z.guid().optional(),
 });
 type Input = z.infer<typeof rodadaGrupalInput>;
 

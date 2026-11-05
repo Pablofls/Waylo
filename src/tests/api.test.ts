@@ -304,3 +304,13 @@ describe("motor de rutas (API)", () => {
     expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe("prueba");
   });
 });
+
+describe("ids de las semillas", () => {
+  it("acepta ids que no son UUID estándar (md5 de las semillas)", async () => {
+    as(ME);
+    const { POST } = await import("@/app/api/busquedas/route");
+    const res = await POST(req("POST", { lugarId: "0bb38370-2630-e33d-2590-4233e00dd26e" }), undefined);
+    expect(res.status).not.toBe(400);
+    expect((await POST(req("POST", { lugarId: "no-es-id" }), undefined)).status).toBe(400);
+  });
+});

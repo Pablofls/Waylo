@@ -110,7 +110,7 @@ export async function persona(uid: string, id: string): Promise<Person | null> {
 }
 
 // Amistad -----------------------------------------------------------------------------
-export const amistadInput = z.object({ con: z.string().uuid(), accion: z.enum(["enviar", "cancelar", "aceptar", "rechazar", "terminar"]) });
+export const amistadInput = z.object({ con: z.guid(), accion: z.enum(["enviar", "cancelar", "aceptar", "rechazar", "terminar"]) });
 
 async function bloqueados(a: string, b: string): Promise<boolean> {
   const r = await queryOne(`SELECT 1 FROM usuario_bloqueado WHERE (usuario_id = $1 AND bloqueado_id = $2) OR (usuario_id = $2 AND bloqueado_id = $1)`, [a, b]);

@@ -9,7 +9,7 @@ import type { LngLat, Ride } from "@/types";
 
 export const crearRodadaInput = z.object({
   vehiculo: z.enum(["bicicleta", "scooter"]).default("bicicleta"),
-  rutaOpcionId: z.string().uuid().optional(),
+  rutaOpcionId: z.guid().optional(),
 });
 
 const fechaCorta = (d: Date) => new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "short", timeZone: "America/Monterrey" }).format(d).replace(".", "");
