@@ -238,19 +238,30 @@ export function MapPlanner({ risk, zones, reports, places, maxExtraMinutes, init
             </div>
           </div>
         ) : !dest ? (
-          <div className="pt-2">
-            <div className="flex items-center justify-between"><p className="text-sm font-bold uppercase tracking-wide text-muted">Tus lugares</p><Link href="/lugares" className="flex min-h-[44px] items-center text-sm font-semibold text-brand-600">Editar</Link></div>
-            <ul className="mt-2 divide-y divide-line rounded-card border border-line bg-white">
-              {frequent.map((p) => (
-                <li key={p.name}>
-                  <button onClick={() => choose(p)} className="flex min-h-[56px] w-full items-center gap-3 px-4 text-left active:bg-canvas">
-                    <MapPin size={18} className="shrink-0 text-brand-600" />
-                    <span className="min-w-0"><span className="block truncate text-[15px] font-semibold">{p.name}</span><span className="block truncate text-xs text-muted">{p.detail}</span></span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-3 text-center text-xs text-muted">Elige un destino para comparar rutas por seguridad.</p>
+          <div>
+            <button onClick={() => setExpanded(!expanded)} className="mx-auto flex h-8 w-full items-center justify-center text-muted" aria-label={expanded ? "Ocultar tus lugares" : "Ver tus lugares"} aria-expanded={expanded}>
+              {expanded ? <ChevronDown size={22} /> : <ChevronUp size={22} />}
+            </button>
+            {expanded ? (
+              <>
+                <div className="flex items-center justify-between"><p className="text-sm font-bold uppercase tracking-wide text-muted">Tus lugares</p><Link href="/lugares" className="flex min-h-[44px] items-center text-sm font-semibold text-brand-600">Editar</Link></div>
+                <ul className="mt-2 divide-y divide-line rounded-card border border-line bg-white">
+                  {frequent.map((p) => (
+                    <li key={p.name}>
+                      <button onClick={() => choose(p)} className="flex min-h-[56px] w-full items-center gap-3 px-4 text-left active:bg-canvas">
+                        <MapPin size={18} className="shrink-0 text-brand-600" />
+                        <span className="min-w-0"><span className="block truncate text-[15px] font-semibold">{p.name}</span><span className="block truncate text-xs text-muted">{p.detail}</span></span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-3 text-center text-xs text-muted">Elige un destino para comparar rutas por seguridad.</p>
+              </>
+            ) : (
+              <button onClick={() => setExpanded(true)} className="flex min-h-[44px] w-full items-center justify-center gap-2 text-sm font-semibold text-ink">
+                <MapPin size={16} className="text-brand-600" />Tus lugares
+              </button>
+            )}
           </div>
         ) : (
           <>
