@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { FeatureCollection, Point } from "geojson";
+import type { FeatureCollection, Point, Polygon } from "geojson";
 import Link from "next/link";
-import { ArrowUpDown, Bookmark, BookmarkCheck, SlidersHorizontal, Siren, ChevronDown, ChevronUp, Circle, Clock, Layers, ListChecks, MapPin, Play, X } from "lucide-react";
+import { ArrowUpDown, Bookmark, BookmarkCheck, SlidersHorizontal, Siren, ChevronDown, ChevronUp, Circle, Clock, Hexagon, Layers, ListChecks, MapPin, Play, RotateCw, X } from "lucide-react";
 import { MapView } from "@/components/map/MapView";
 import { HeatmapLayer } from "@/components/map/HeatmapLayer";
 import { ReportMarkers } from "@/components/map/ReportMarkers";
+import { ZoneLayer } from "@/components/map/ZoneLayer";
 import { RouteLine } from "@/components/map/RouteLine";
 import { UserMarker } from "@/components/map/UserMarker";
 import { MapFilterSheet, type ReportAge } from "@/components/domain/MapFilterSheet";
@@ -15,15 +16,16 @@ import { RouteOptionCard } from "@/components/domain/RouteOptionCard";
 import { SafetyScoreBadge } from "@/components/domain/SafetyScoreBadge";
 import { Button } from "@/components/ui/Button";
 import { useSocial } from "@/lib/social";
-import { api } from "@/lib/api";
+import { api, errorText } from "@/lib/api";
 import { MONTERREY_CENTER } from "@/lib/map/geo";
 import { useUserPosition } from "@/lib/geo/useUserPosition";
 import { categoryById } from "@/lib/report-categories";
 import { formatDateTime } from "@/lib/format";
-import type { Place, Report, ReportCategory, RouteKind, RouteOption } from "@/types";
+import type { Place, Report, ReportCategory, RouteKind, RouteOption, ZoneShapeProps } from "@/types";
 
 interface Props {
   risk: FeatureCollection<Point>;
+  zones: FeatureCollection<Polygon, ZoneShapeProps>;
   reports: Report[];
   places: Place[];
   maxExtraMinutes: number;
@@ -34,12 +36,18 @@ interface Props {
 
 const ME: Place = { name: "Mi ubicación", detail: "", coordinates: MONTERREY_CENTER };
 
-export function MapPlanner({ risk, reports, places, maxExtraMinutes, initialDest, initialRoute }: Props) {
+export function MapPlanner({ risk, zones, reports, places, maxExtraMinutes, initialDest, initialRoute }: Props) {
   const [heat, setHeat] = useState(true);
+  const [zonesOn, setZonesOn] = useState(true);
+  const [selectedZone, setSelectedZone] = useState<ZoneShapeProps | null>(null);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [from, setFrom] = useState<Place>(ME);
   const [routes, setRoutes] = useState<RouteOption[]>([]);
   const [loadingRoutes, setLoadingRoutes] = useState(false);
+  const [recommended, setRecommended] = useState<RouteKind | null>(null);
+  const [notice, setNotice] = useState("");
+  const [routeError, setRouteError] = useState("");
+  const [attempt, setAttempt] = useState(0);
   const [dest, setDest] = useState<Place | null>(initialDest ?? null);
   const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState("");
@@ -60,23 +68,38 @@ export function MapPlanner({ risk, reports, places, maxExtraMinutes, initialDest
   const ordered = (["rapida", "segura", "equilibrada"] as RouteKind[]).flatMap((id) => routes.find((r) => r.id === id) ?? []);
   const current = routes.find((r) => r.id === picked) ?? routes[0];
   const saved = dest && current ? savedRoutes.find((r) => r.toName === dest.name && r.routeId === current.id) : undefined;
-  const recommended = routes.filter((r) => r.extraMinutes <= maxExtraMinutes).sort((a, b) => b.safetyScore - a.safetyScore)[0]?.id;
   const matches = useMemo(() => places.filter((p) => `${p.name} ${p.detail}`.toLowerCase().includes(query.trim().toLowerCase())), [places, query]);
 
-  // Opciones de ruta hacia el destino elegido (solo lugares con id; los puntos libres no tienen rutas calculadas).
+  // El origen "Mi ubicación" es el GPS; se redondea (~100 m) para no recalcular con cada lectura.
+  const fromMe = from === ME;
+  const origin: Place = fromMe ? { ...ME, coordinates: position } : from;
+  const originKey = fromMe ? position.map((c) => c.toFixed(3)).join(",") : `${from.id ?? from.name}`;
+
+  // Rutas calculadas por el motor (preferencias de la persona y reportes de la comunidad).
   useEffect(() => {
     setRoutes([]);
-    if (!dest?.id) return;
+    setRecommended(null);
+    setNotice("");
+    setRouteError("");
+    if (!dest) return;
     let alive = true;
     setLoadingRoutes(true);
-    api<{ opciones: RouteOption[] }>(`/api/rutas/opciones?destino=${dest.id}`)
-      .then((r) => alive && setRoutes(r.opciones))
-      .catch(() => alive && setRoutes([]))
+    const toInput = (p: Place) => ({ id: p.id, name: p.name.slice(0, 120), detail: p.detail.slice(0, 240), coordinates: p.coordinates });
+    api<{ opciones: RouteOption[]; recomendada: RouteKind | null; aviso?: string }>("/api/rutas/calcular", "POST", { origen: toInput(origin), destino: toInput(dest === ME ? { ...ME, coordinates: position } : dest) })
+      .then((r) => {
+        if (!alive) return;
+        setRoutes(r.opciones);
+        setRecommended(r.recomendada);
+        setNotice(r.aviso ?? "");
+        if (r.recomendada && !initialRoute) setPicked(r.recomendada);
+      })
+      .catch((e) => alive && setRouteError(errorText(e)))
       .finally(() => alive && setLoadingRoutes(false));
     return () => {
       alive = false;
     };
-  }, [dest?.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dest, originKey, attempt]);
 
   const choose = (p: Place) => {
     addSearch(p);
@@ -94,11 +117,12 @@ export function MapPlanner({ risk, reports, places, maxExtraMinutes, initialDest
   return (
     <div className="relative flex-1">
       <MapView center={MONTERREY_CENTER} zoom={12}>
+        <ZoneLayer data={zones} visible={zonesOn} onSelect={(z) => { setSelectedReport(null); setSelectedZone(z); }} />
         <HeatmapLayer data={risk} visible={heat} />
         {dest && current &&
           routes.filter((r) => r.id !== picked).map((r) => <RouteLine key={`${r.id}-off`} id={`m-${r.id}`} coordinates={r.coordinates} color="#9AA3AD" width={4} opacity={0.8} />)}
         {dest && current && <RouteLine key={`${current.id}-on`} id={`m-${current.id}`} coordinates={current.coordinates} risk={heat ? risk : undefined} fit fitPadding={{ top: 150, bottom: 330, left: 40, right: 40 }} />}
-        <ReportMarkers reports={shownReports} onSelect={setSelectedReport} />
+        <ReportMarkers reports={shownReports} onSelect={(r) => { setSelectedZone(null); setSelectedReport(r); }} />
         <UserMarker position={position} />
       </MapView>
 
@@ -160,7 +184,7 @@ export function MapPlanner({ risk, reports, places, maxExtraMinutes, initialDest
 
         {!searching && (
           <div className="mt-2 flex items-start justify-between">
-            {heat ? (
+            {heat || zonesOn ? (
               <div className="rounded-lg border border-line bg-white px-2.5 py-2">
                 <p className="text-[11px] font-semibold text-muted">Nivel de riesgo</p>
                 <div className="mt-1 h-2 w-24 rounded-full" style={{ background: "linear-gradient(to right, #13896F, #F2C94C, #E8833A, #D64545)" }} />
@@ -170,8 +194,11 @@ export function MapPlanner({ risk, reports, places, maxExtraMinutes, initialDest
             <div className="flex gap-2">
             <button onClick={() => setFilterOpen(true)} aria-label="Filtros del mapa" className={`relative flex h-11 w-11 items-center justify-center rounded-xl border ${filtersOn ? "border-brand-600 bg-brand-100 text-brand-700" : "border-line bg-white"}`}><SlidersHorizontal size={18} />{filtersOn && <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-brand-600" />}</button>
             <button onClick={() => setReporting(true)} aria-label="Reportar un problema aquí" className="flex h-11 items-center gap-2 rounded-xl bg-risk-red px-3 text-sm font-semibold text-white"><Siren size={18} />Reportar</button>
-            <button onClick={() => setHeat(!heat)} aria-pressed={heat} className={`flex h-11 items-center gap-2 rounded-xl border px-3 text-sm font-semibold ${heat ? "border-brand-900 bg-brand-900 text-white" : "border-line bg-white text-ink"}`}>
+            <button onClick={() => setHeat(!heat)} aria-pressed={heat} aria-label="Mapa de calor de riesgo" className={`flex h-11 items-center gap-1.5 rounded-xl border px-2.5 text-sm font-semibold ${heat ? "border-brand-900 bg-brand-900 text-white" : "border-line bg-white text-ink"}`}>
               <Layers size={18} />Riesgo
+            </button>
+            <button onClick={() => setZonesOn(!zonesOn)} aria-pressed={zonesOn} aria-label="Zonas de seguridad" className={`flex h-11 items-center gap-1.5 rounded-xl border px-2.5 text-sm font-semibold ${zonesOn ? "border-brand-900 bg-brand-900 text-white" : "border-line bg-white text-ink"}`}>
+              <Hexagon size={18} />Zonas
             </button>
             </div>
           </div>
@@ -180,7 +207,20 @@ export function MapPlanner({ risk, reports, places, maxExtraMinutes, initialDest
 
       {/* Hoja inferior */}
       <div className="absolute inset-x-0 bottom-0 max-h-[62%] overflow-y-auto rounded-t-3xl border-t border-line bg-canvas px-4 pb-4 pt-2">
-        {selectedReport ? (
+        {selectedZone ? (
+          <div className="rounded-card border border-line bg-white p-4">
+            <div className="flex items-start gap-3">
+              <Hexagon size={26} className="mt-0.5 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="font-bold">{selectedZone.name}</p>
+                <p className="text-sm text-muted">{selectedZone.score < 60 ? "Zona de riesgo alto" : selectedZone.score < 80 ? "Zona de riesgo medio" : "Zona de riesgo bajo"} · Safety Score del mes</p>
+                <Link href={`/zonas/${selectedZone.id}`} className="mt-1 inline-flex min-h-[44px] items-center text-sm font-semibold text-brand-600">Ver zona</Link>
+              </div>
+              <SafetyScoreBadge score={selectedZone.score} />
+              <button aria-label="Cerrar" onClick={() => setSelectedZone(null)} className="-m-2 flex h-11 w-11 items-center justify-center"><X size={20} /></button>
+            </div>
+          </div>
+        ) : selectedReport ? (
           <div className="rounded-card border border-line bg-white p-4">
             <div className="flex items-start gap-3">
               {(() => { const c = categoryById(selectedReport.category); return <c.icon size={26} className="mt-0.5 shrink-0" />; })()}
@@ -211,9 +251,11 @@ export function MapPlanner({ risk, reports, places, maxExtraMinutes, initialDest
         ) : (
           <>
             {!current ? (
-              <div className="rounded-card border border-line bg-white p-4 text-center">
-                <p className="font-bold">{loadingRoutes ? "Buscando rutas…" : "Aún no tenemos rutas para este destino"}</p>
-                {!loadingRoutes && <p className="mt-1 text-sm text-muted">Estamos sumando trayectos. Prueba con otro lugar de tu lista o revisa los reportes del mapa.</p>}
+              <div className="rounded-card border border-line bg-white p-4 text-center" aria-live="polite">
+                <p className="font-bold">{loadingRoutes ? "Calculando rutas seguras…" : routeError ? "No pudimos calcular las rutas" : "No encontramos rutas para este destino"}</p>
+                {loadingRoutes && <p className="mt-1 text-sm text-muted">Revisamos los reportes de la comunidad en cada trayecto.</p>}
+                {!loadingRoutes && <p className="mt-1 text-sm text-muted">{routeError || notice || "Prueba con otro lugar de tu lista o revisa los reportes del mapa."}</p>}
+                {!loadingRoutes && <button onClick={() => setAttempt((a) => a + 1)} className="mt-2 inline-flex min-h-[44px] items-center gap-2 text-sm font-semibold text-brand-600"><RotateCw size={16} />Reintentar</button>}
               </div>
             ) : (<>
             <button onClick={() => setExpanded(!expanded)} className="mx-auto flex h-8 w-full items-center justify-center text-muted" aria-label={expanded ? "Contraer opciones" : "Ver las 3 opciones"} aria-expanded={expanded}>
@@ -221,7 +263,8 @@ export function MapPlanner({ risk, reports, places, maxExtraMinutes, initialDest
             </button>
             {expanded ? (
               <div className="space-y-3">
-                <p className="text-sm text-muted">Tope de <strong className="text-ink">{maxExtraMinutes} min</strong> extra. Compara las opciones:</p>
+                {notice && <p className="rounded-lg bg-white px-3 py-2 text-xs text-muted">{notice}</p>}
+                <p className="text-sm text-muted">Recomendamos según tu preferencia de seguridad y tu tope de <strong className="text-ink">{maxExtraMinutes} min</strong> extra. <Link href="/configuracion/rutas" className="font-semibold text-brand-600">Ajustar</Link></p>
                 {ordered.map((r) => <RouteOptionCard key={r.id} route={r} selected={picked === r.id} recommended={recommended === r.id} onSelect={() => setPicked(r.id)} />)}
               </div>
             ) : (
@@ -235,7 +278,7 @@ export function MapPlanner({ risk, reports, places, maxExtraMinutes, initialDest
               <button
                 aria-label={saved ? "Quitar ruta guardada" : "Guardar ruta"}
                 aria-pressed={Boolean(saved)}
-                onClick={() => (saved ? removeSavedRoute(saved.id) : addSavedRoute({ id: `sr_${Date.now()}`, name: `${from.name} a ${dest!.name}`, fromName: from.name, toName: dest!.name, destination: dest!.coordinates, routeId: current.id, minutes: current.minutes, safetyScore: current.safetyScore }, { ...from, coordinates: position }, dest!))}
+                onClick={() => (saved ? removeSavedRoute(saved.id) : addSavedRoute({ id: `sr_${Date.now()}`, name: `${from.name} a ${dest!.name}`, fromName: from.name, toName: dest!.name, destination: dest!.coordinates, routeId: current.id, minutes: current.minutes, safetyScore: current.safetyScore }, origin, dest!))}
                 className={`flex min-h-[48px] items-center justify-center rounded-xl border ${saved ? "border-brand-600 bg-brand-100 text-brand-700" : "border-line bg-white"}`}
               >{saved ? <BookmarkCheck size={20} /> : <Bookmark size={20} />}</button>
               <Button href={`/rodada?ruta=${current.optionId}`} icon={<Play size={18} fill="currentColor" />}>Iniciar</Button>

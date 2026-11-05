@@ -26,6 +26,7 @@ export default async function RutaDetalle({ params }: { params: Promise<{ id: st
           </div>
           <p className="mt-4 text-[15px]">{route.summary}</p>
           <p className="mt-2 text-sm font-semibold text-muted">{route.extraMinutes === 0 ? "Es la ruta más corta." : `${route.extraMinutes} min más que la ruta más rápida.`}</p>
+          {route.reportsOnRoute !== undefined && <p className="mt-1 text-sm font-semibold text-muted">{route.reportsOnRoute === 0 ? "Sin reportes de la comunidad en el trayecto (últimos 30 días)." : `${route.reportsOnRoute} ${route.reportsOnRoute === 1 ? "reporte" : "reportes"} de la comunidad en el trayecto (últimos 30 días).`}</p>}
         </section>
         <section className="px-4 pt-4">
           <h2 className="text-lg font-bold">Por qué esta calificación</h2>
@@ -35,7 +36,7 @@ export default async function RutaDetalle({ params }: { params: Promise<{ id: st
         <div className="h-4" />
       </div>
       <div className="border-t border-line bg-white p-4">
-        <Button href={`/rodada?ruta=${route.id}`} full size="lg" icon={<Play size={20} fill="currentColor" />}>Iniciar con esta ruta</Button>
+        <Button href={`/rodada?ruta=${route.optionId ?? id}`} full size="lg" icon={<Play size={20} fill="currentColor" />}>Iniciar con esta ruta</Button>
       </div>
     </>
   );

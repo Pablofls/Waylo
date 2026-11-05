@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Bike, Scooter, Share2, ShieldAlert, Route as RouteIcon, Compass, CornerUpLeft, CornerUpRight, ArrowUp, Flag, Mic, Pause, Play, Square, X, Siren, Check, LocateOff } from "lucide-react";
+import { Bike, Scooter, Share2, ShieldAlert, Route as RouteIcon, Compass, CornerUpLeft, CornerUpRight, ArrowUp, Flag, Mic, Pause, Play, Square, X, Siren, Check, LocateOff, RotateCw } from "lucide-react";
 import { MapView } from "@/components/map/MapView";
 import { RouteLine } from "@/components/map/RouteLine";
 import { UserMarker } from "@/components/map/UserMarker";
@@ -37,8 +37,21 @@ interface Props {
 }
 
 const OFF_ROUTE_KM = 0.08;
+/** Segundos fuera de la ruta antes de recalcular, y mínimo entre dos recálculos. */
+const REROUTE_AFTER_MS = 15_000;
+const REROUTE_GAP_MS = 60_000;
+/** Cada cuánto se revisan reportes nuevos en la ruta. */
+const ALERTS_EVERY_MS = 120_000;
 
-export function LiveRide({ route, steps, alerts, risk }: Props) {
+export function LiveRide({ route: initialRoute, steps: initialSteps, alerts: initialAlerts, risk }: Props) {
+  // La ruta puede cambiar durante la rodada (recálculo al desviarse o por un reporte nuevo).
+  const [route, setRoute] = useState(initialRoute);
+  const [steps, setSteps] = useState(initialSteps);
+  const [alerts, setAlerts] = useState(initialAlerts);
+  const [rerouting, setRerouting] = useState(false);
+  const [rerouteMsg, setRerouteMsg] = useState("");
+  const [newReport, setNewReport] = useState<NavAlert | null>(null);
+  const lastReroute = useRef(0);
   const guided = route !== null;
   const router = useRouter();
   const [phase, setPhase] = useState<"idle" | "active">("idle");
@@ -75,6 +88,73 @@ export function LiveRide({ route, steps, alerts, risk }: Props) {
       ? { title: "Zona de riesgo alto", text: "Hay varios reportes cerca. Baja la velocidad y circula con precaución.", tone: "red" as const }
       : undefined;
   const offRoute = guided && active && nav !== null && nav.offKm > OFF_ROUTE_KM;
+  const alertKey = alert ? ("id" in alert && alert.id ? alert.id : alert.title) : null;
+  const alertAt = alert && "at" in alert && alert.at !== undefined ? alert.at : null;
+  const alertDist = guided && alertAt !== null && alertAt > progress ? Math.round(((alertAt - progress) * route.km * 1000) / 10) * 10 : null;
+
+  // Recalcula desde la posición actual con el mismo tipo de ruta.
+  const position = ride.position;
+  const optionId = route?.optionId;
+  const reroute = useCallback(async () => {
+    if (!optionId || !position) return;
+    lastReroute.current = Date.now();
+    setRerouting(true);
+    setNewReport(null);
+    try {
+      const r = await api<{ route: RouteOption; steps: NavStep[]; alerts: NavAlert[] }>("/api/rutas/recalcular", "POST", { opcionId: optionId, lng: position[0], lat: position[1] });
+      setRoute(r.route);
+      setSteps(r.steps);
+      setAlerts(r.alerts);
+      setDismissed(null);
+      setRerouteMsg(`Nueva ruta · Safety Score ${r.route.safetyScore}`);
+    } catch (e) {
+      setRerouteMsg(errorText(e));
+    } finally {
+      setRerouting(false);
+    }
+  }, [optionId, position]);
+
+  useEffect(() => {
+    if (!rerouteMsg) return;
+    const t = setTimeout(() => setRerouteMsg(""), 6000);
+    return () => clearTimeout(t);
+  }, [rerouteMsg]);
+
+  // Fuera de la ruta por más de 15 s → recalcular (máximo una vez por minuto).
+  const rerouteRef = useRef(reroute);
+  rerouteRef.current = reroute;
+  useEffect(() => {
+    if (!offRoute || paused || rerouting) return;
+    const wait = Math.max(REROUTE_AFTER_MS, REROUTE_GAP_MS - (Date.now() - lastReroute.current));
+    const t = setTimeout(() => void rerouteRef.current(), wait);
+    return () => clearTimeout(t);
+  }, [offRoute, paused, rerouting]);
+
+  // Reportes nuevos en la ruta mientras se rueda.
+  const progressRef = useRef(progress);
+  progressRef.current = progress;
+  useEffect(() => {
+    if (!active || !optionId) return;
+    const t = setInterval(() => {
+      api<{ steps: NavStep[]; alerts: NavAlert[] }>(`/api/rutas/${optionId}/navegacion`)
+        .then((n) => {
+          setAlerts((prev) => {
+            const known = new Set(prev.map((a) => a.id));
+            const fresh = n.alerts.find((a) => a.id && !known.has(a.id) && (a.at ?? a.to) > progressRef.current);
+            if (fresh) setNewReport(fresh);
+            return n.alerts;
+          });
+        })
+        .catch(() => {});
+    }, ALERTS_EVERY_MS);
+    return () => clearInterval(t);
+  }, [active, optionId]);
+
+  // Vibra cuando aparece un aviso nuevo.
+  useEffect(() => {
+    if (active && alertKey && typeof navigator !== "undefined") navigator.vibrate?.(200);
+  }, [active, alertKey]);
+
   const distToNext = guided && nextStep ? Math.max(0, Math.round(((nextStep.at - progress) * route.km * 1000) / 10) * 10) : 0;
   const Turn = nextStep ? turnIcon[nextStep.turn] : ArrowUp;
 
@@ -142,16 +222,31 @@ export function LiveRide({ route, steps, alerts, risk }: Props) {
                 </div>
               </div>
             )}
-            {offRoute && (
+            {(offRoute || rerouting) && (
               <div role="alert" className="pointer-events-auto flex items-center gap-3 rounded-xl bg-white px-4 py-3 text-ink">
-                <RouteIcon size={26} className="shrink-0 text-risk-orange" />
-                <div className="min-w-0 flex-1"><p className="font-bold leading-tight">Te desviaste de la ruta</p><p className="text-sm text-muted">Regresa al trazo marcado en el mapa para seguir la navegación.</p></div>
+                {rerouting ? <RotateCw size={26} className="shrink-0 animate-spin text-brand-600" /> : <RouteIcon size={26} className="shrink-0 text-risk-orange" />}
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold leading-tight">{rerouting ? "Recalculando ruta…" : "Te desviaste de la ruta"}</p>
+                  <p className="text-sm text-muted">{rerouting ? "Buscamos el camino más seguro desde donde estás." : "Si no regresas al trazo, buscaremos una ruta nueva desde aquí."}</p>
+                </div>
+                {!rerouting && <button onClick={() => void reroute()} className="min-h-[44px] shrink-0 text-sm font-semibold text-brand-600">Recalcular</button>}
+              </div>
+            )}
+            {rerouteMsg && !rerouting && !offRoute && <p role="status" className="pointer-events-auto rounded-xl bg-brand-100 px-4 py-2 text-sm font-semibold text-brand-700">{rerouteMsg}</p>}
+            {newReport && !rerouting && !offRoute && (
+              <div role="alert" className="pointer-events-auto flex items-center gap-3 rounded-xl bg-white px-4 py-3 text-ink">
+                <Siren size={24} className={`shrink-0 ${newReport.tone === "red" ? "text-risk-red" : "text-risk-orange"}`} />
+                <div className="min-w-0 flex-1"><p className="font-bold leading-tight">Nuevo reporte en tu ruta</p><p className="truncate text-sm text-muted">{newReport.title}{newReport.text ? ` · ${newReport.text}` : ""}</p></div>
+                <div className="flex shrink-0 flex-col items-end">
+                  <button onClick={() => void reroute()} className="min-h-[36px] text-sm font-semibold text-brand-600">Buscar ruta alterna</button>
+                  <button onClick={() => setNewReport(null)} className="min-h-[32px] text-xs font-semibold text-muted">Seguir así</button>
+                </div>
               </div>
             )}
             {sharingWith.length > 0 && <p className="pointer-events-auto flex items-center gap-2 rounded-xl bg-brand-100 px-4 py-2 text-sm font-semibold text-brand-700"><Share2 size={16} />Compartiendo con {sharingWith.join(", ")}</p>}
-            {alert && !offRoute && dismissed !== alert.title && (
-              <button className="pointer-events-auto block w-full text-left" onClick={() => setDismissed(alert.title)} aria-label="Cerrar aviso">
-                <AlertBanner tone={alert.tone} title={alert.title} text={alert.text} />
+            {alert && alertKey && !offRoute && !newReport && dismissed !== alertKey && (
+              <button className="pointer-events-auto block w-full text-left" onClick={() => setDismissed(alertKey)} aria-label="Cerrar aviso">
+                <AlertBanner tone={alert.tone} title={alertDist !== null ? `${alert.title} a ${alertDist} m` : alert.title} text={alert.text} />
               </button>
             )}
             {ride.error && <p role="alert" className="pointer-events-auto rounded-xl bg-white px-4 py-3 text-sm font-semibold text-[#B02E2E]">{ride.error === "denied" ? "Permiso de ubicación denegado." : ride.error === "unavailable" ? "Este dispositivo no admite geolocalización." : "No pudimos obtener tu ubicación."} <Link href="/permisos/ubicacion" className="underline">Cómo activarla</Link></p>}

@@ -29,6 +29,7 @@ Nunca se suben a Git; en la VM viven en `/etc/waylo/waylo.env`.
 | `WS_JWT_SECRET` | Sí | 32+ caracteres; el mismo que usa el servicio en tiempo real para validar los JWT. |
 | `NEXT_PUBLIC_WS_URL` | Sí (tiempo real) | `wss://<host>/ws`. |
 | `NEXT_PUBLIC_MAPTILER_KEY` | No | Llave de MapTiler. Vacía usa un estilo gratuito de respaldo (OpenFreeMap). |
+| `ORS_API_KEY` | Sí (rutas) | Llave de OpenRouteService para calcular rutas en bici. Sin ella el mapa solo muestra rutas ya calculadas. |
 | `UPLOADS_DIR` | Recomendada | Carpeta (fuera del repositorio) donde se guardan las fotos de los reportes. Por omisión `./uploads`. |
 | `APP_URL` | No | URL pública de la app, para correos. |
 
@@ -70,11 +71,22 @@ Las pruebas de las rutas API usan una base falsa (no necesitan Postgres). Las co
 3. `POST /api/ws-token` emite el JWT corto (`sub`, `role`, `allow`, `exp`, 5 min) y el cliente se conecta a `NEXT_PUBLIC_WS_URL`. Reconecta solo y renueva el token antes de que venza.
 4. Al terminar se marca `finalizada_en`. No se guardan km ni minutos: se calculan en la base (`v_rodada_resumen`).
 
+## Motor de rutas
+
+`POST /api/rutas/calcular` (`src/server/motor-rutas.ts`):
+
+1. Pide hasta 3 alternativas en bici a OpenRouteService (`src/server/ors.ts`), más otra petición que evita reportes graves recientes (robo, accidente, autos rápidos) y zonas en rojo cercanas.
+2. Califica cada trazo con los reportes de la comunidad a ≤60 m (últimos 90 días, con más peso los recientes) y el % en ciclovía. El Safety Score lo sigue calculando `v_ruta_opcion`.
+3. Elige **rápida**, **segura** (la mejor dentro del tope de minutos extra) y **equilibrada** según las preferencias de `/configuracion/rutas`: inclinación por la seguridad, tope de minutos, evitar zonas rojas / vías rápidas / calles oscuras de noche y preferir ciclovías.
+4. Guarda la consulta en `ruta_consulta` / `ruta_opcion` con factores y maniobras. Repetir la misma consulta en menos de 10 min no gasta cuota; máximo 30 cálculos por persona cada 10 min.
+
+En la rodada guiada, si te sales de la ruta más de 15 s se recalcula desde donde estás (`POST /api/rutas/recalcular`) y cada 2 min se revisan reportes nuevos en el trayecto (`GET /api/rutas/[id]/navegacion`).
+
 ## Pendiente
 
 Ver `docs/propuestas/app-datos.md` para el detalle. En corto:
 
-- **Motor de rutas**: las opciones de ruta salen de consultas ya calculadas; falta conectar un proveedor (OpenRouteService, Valhalla...) para calcular cualquier trayecto y recalcular al desviarse.
+- **Rutas personalizadas (Premium)** y búsqueda de direcciones escritas a mano (geocodificación): el motor solo calcula hacia lugares de la lista o puntos del mapa.
 - **Proveedor de correo y de SMS/push**: hoy no se envían correos ni se avisa automáticamente a los contactos de emergencia (la persona envía el mensaje desde su app de SMS).
 - **Generación de notificaciones** de alertas de ruta, cambios de estado de reportes y recordatorios de rodadas (necesita un proceso programado).
 - **Mapas sin conexión**: se registra qué áreas eligió la persona, pero aún no se guardan los mosaicos del mapa.

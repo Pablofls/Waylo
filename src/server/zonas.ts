@@ -1,7 +1,8 @@
 import { notFound } from "./api";
 import { query } from "./db";
 import { isUuid } from "./geo";
-import type { ReportCategory, Zone } from "@/types";
+import type { FeatureCollection, Polygon } from "geojson";
+import type { ReportCategory, Zone, ZoneShapeProps } from "@/types";
 
 type Row = { zona_id: string; nombre: string; detalle: string | null; municipio: string; descripcion: string; latitud: number; longitud: number; score: number | null; tendencia: number | null };
 
@@ -45,6 +46,17 @@ export async function zonas(): Promise<Zone[]> {
 export async function zona(id: string): Promise<Zone | null> {
   if (!isUuid(id)) return null;
   return (await armar(await query<Row>(`${SELECT} WHERE zona_id = $1`, [id])))[0] ?? null;
+}
+
+/** Polígonos de las zonas con su Safety Score del mes, para dibujarlos en el mapa. */
+export async function zonasGeo(): Promise<FeatureCollection<Polygon, ZoneShapeProps>> {
+  const rows = await query<{ zona_id: string; nombre: string; score: number | null; area: string }>(
+    `SELECT v.zona_id, v.nombre, v.score, ST_AsGeoJSON(z.area::geometry, 6) AS area FROM v_zona_resumen v JOIN zona z ON z.id = v.zona_id`,
+  );
+  return {
+    type: "FeatureCollection",
+    features: rows.map((r) => ({ type: "Feature", properties: { id: r.zona_id, name: r.nombre, score: r.score ?? 100 }, geometry: JSON.parse(r.area) as Polygon })),
+  };
 }
 
 export { notFound };
