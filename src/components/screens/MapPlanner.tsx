@@ -191,15 +191,19 @@ export function MapPlanner({ risk, zones, reports, places, maxExtraMinutes, init
                 <div className="flex justify-between text-[10px] text-muted"><span>Bajo</span><span>Alto</span></div>
               </div>
             ) : <span />}
+            <div className="flex flex-col items-end gap-2">
             <div className="flex gap-2">
             <button onClick={() => setFilterOpen(true)} aria-label="Filtros del mapa" className={`relative flex h-11 w-11 items-center justify-center rounded-xl border ${filtersOn ? "border-brand-600 bg-brand-100 text-brand-700" : "border-line bg-white"}`}><SlidersHorizontal size={18} />{filtersOn && <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-brand-600" />}</button>
             <button onClick={() => setReporting(true)} aria-label="Reportar un problema aquí" className="flex h-11 items-center gap-2 rounded-xl bg-risk-red px-3 text-sm font-semibold text-white"><Siren size={18} />Reportar</button>
+            </div>
+            <div className="flex gap-2">
             <button onClick={() => setHeat(!heat)} aria-pressed={heat} aria-label="Mapa de calor de riesgo" className={`flex h-11 items-center gap-1.5 rounded-xl border px-2.5 text-sm font-semibold ${heat ? "border-brand-900 bg-brand-900 text-white" : "border-line bg-white text-ink"}`}>
               <Layers size={18} />Riesgo
             </button>
             <button onClick={() => setZonesOn(!zonesOn)} aria-pressed={zonesOn} aria-label="Zonas de seguridad" className={`flex h-11 items-center gap-1.5 rounded-xl border px-2.5 text-sm font-semibold ${zonesOn ? "border-brand-900 bg-brand-900 text-white" : "border-line bg-white text-ink"}`}>
               <Hexagon size={18} />Zonas
             </button>
+            </div>
             </div>
           </div>
         )}

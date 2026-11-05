@@ -107,7 +107,7 @@ export const crearReporteInput = z.object({
   lng: z.number().min(-100.7).max(-100.0),
   lat: z.number().min(25.4).max(26.0),
   referencia: z.string().trim().max(200).optional(),
-  rodadaId: z.string().uuid().optional(),
+  rodadaId: z.guid().optional(),
 });
 
 export async function crearReporte(uid: string, d: z.infer<typeof crearReporteInput>): Promise<string> {

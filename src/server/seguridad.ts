@@ -47,7 +47,7 @@ export const emergenciaInput = z.object({
   tipo: z.enum(["caida_detectada", "sos_manual"]),
   lat: z.number().min(-90).max(90).optional(),
   lng: z.number().min(-180).max(180).optional(),
-  rodadaId: z.string().uuid().optional(),
+  rodadaId: z.guid().optional(),
 });
 
 /** Registra el evento. El aviso a contactos lo hace la persona desde su app de mensajes (aún no hay proveedor de SMS). */
