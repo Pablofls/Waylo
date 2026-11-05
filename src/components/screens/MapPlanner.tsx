@@ -3,14 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FeatureCollection, Point, Polygon } from "geojson";
 import Link from "next/link";
-import { ArrowUpDown, Bookmark, BookmarkCheck, SlidersHorizontal, Siren, ChevronDown, ChevronUp, Circle, Clock, Hexagon, Layers, ListChecks, MapPin, Play, RotateCw, X } from "lucide-react";
+import { ArrowUpDown, Bookmark, BookmarkCheck, ChevronDown, ChevronUp, Circle, Clock, ListChecks, MapPin, Play, RotateCw, X } from "lucide-react";
 import { MapView } from "@/components/map/MapView";
 import { HeatmapLayer } from "@/components/map/HeatmapLayer";
 import { ReportMarkers } from "@/components/map/ReportMarkers";
 import { ZoneLayer } from "@/components/map/ZoneLayer";
 import { RouteLine } from "@/components/map/RouteLine";
 import { UserMarker } from "@/components/map/UserMarker";
-import { MapFilterSheet, type ReportAge } from "@/components/domain/MapFilterSheet";
+import { MapSelectionCard, RiskControls, useRiskLayers } from "@/components/domain/RiskControls";
 import { ReportSheet } from "@/components/domain/ReportSheet";
 import { RouteOptionCard } from "@/components/domain/RouteOptionCard";
 import { SafetyScoreBadge } from "@/components/domain/SafetyScoreBadge";
@@ -19,9 +19,7 @@ import { useSocial } from "@/lib/social";
 import { api, errorText } from "@/lib/api";
 import { MONTERREY_CENTER } from "@/lib/map/geo";
 import { useUserPosition } from "@/lib/geo/useUserPosition";
-import { categoryById } from "@/lib/report-categories";
-import { formatDateTime } from "@/lib/format";
-import type { Place, Report, ReportCategory, RouteKind, RouteOption, ZoneShapeProps } from "@/types";
+import type { Place, Report, RouteKind, RouteOption, ZoneShapeProps } from "@/types";
 
 interface Props {
   risk: FeatureCollection<Point>;
@@ -37,10 +35,8 @@ interface Props {
 const ME: Place = { name: "Mi ubicación", detail: "", coordinates: MONTERREY_CENTER };
 
 export function MapPlanner({ risk, zones, reports, places, maxExtraMinutes, initialDest, initialRoute }: Props) {
-  const [heat, setHeat] = useState(true);
-  const [zonesOn, setZonesOn] = useState(true);
-  const [selectedZone, setSelectedZone] = useState<ZoneShapeProps | null>(null);
-  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const layers = useRiskLayers(reports);
+  const { heat, selectedZone, selectedReport } = layers;
   const [from, setFrom] = useState<Place>(ME);
   const [routes, setRoutes] = useState<RouteOption[]>([]);
   const [loadingRoutes, setLoadingRoutes] = useState(false);
@@ -55,13 +51,6 @@ export function MapPlanner({ risk, zones, reports, places, maxExtraMinutes, init
   const [expanded, setExpanded] = useState(true);
   const position = useUserPosition(MONTERREY_CENTER);
   const { savedPlaces, savedRoutes, addSavedRoute, removeSavedRoute, searchHistory, addSearch, removeSearch, clearSearches } = useSocial();
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [cats, setCats] = useState<ReportCategory[]>([]);
-  const [age, setAge] = useState<ReportAge>("todo");
-  const [refTime] = useState(() => Date.now());
-  const maxAge = { todo: Infinity, "24h": 864e5, "7d": 7 * 864e5, "30d": 30 * 864e5 }[age];
-  const shownReports = useMemo(() => reports.filter((r) => (cats.length === 0 || cats.includes(r.category)) && refTime - new Date(r.createdAt).getTime() <= maxAge), [reports, cats, maxAge, refTime]);
-  const filtersOn = cats.length > 0 || age !== "todo";
   const [reporting, setReporting] = useState(false);
   const frequent: Place[] = savedPlaces.length > 0 ? savedPlaces.map((sp) => ({ ...sp.place, name: sp.label })) : places.slice(0, 4);
 
@@ -117,12 +106,12 @@ export function MapPlanner({ risk, zones, reports, places, maxExtraMinutes, init
   return (
     <div className="relative flex-1">
       <MapView center={MONTERREY_CENTER} zoom={12}>
-        <ZoneLayer data={zones} visible={zonesOn} onSelect={(z) => { setSelectedReport(null); setSelectedZone(z); }} />
+        <ZoneLayer data={zones} visible={layers.zones} onSelect={layers.selectZone} />
         <HeatmapLayer data={risk} visible={heat} />
         {dest && current &&
           routes.filter((r) => r.id !== picked).map((r) => <RouteLine key={`${r.id}-off`} id={`m-${r.id}`} coordinates={r.coordinates} color="#9AA3AD" width={4} opacity={0.8} />)}
         {dest && current && <RouteLine key={`${current.id}-on`} id={`m-${current.id}`} coordinates={current.coordinates} risk={heat ? risk : undefined} fit fitPadding={{ top: 150, bottom: 330, left: 40, right: 40 }} />}
-        <ReportMarkers reports={shownReports} onSelect={(r) => { setSelectedZone(null); setSelectedReport(r); }} />
+        <ReportMarkers reports={layers.shownReports} onSelect={layers.selectReport} />
         <UserMarker position={position} />
       </MapView>
 
@@ -183,60 +172,16 @@ export function MapPlanner({ risk, zones, reports, places, maxExtraMinutes, init
         </div>
 
         {!searching && (
-          <div className="mt-2 flex items-start justify-between">
-            {heat || zonesOn ? (
-              <div className="rounded-lg border border-line bg-white px-2.5 py-2">
-                <p className="text-[11px] font-semibold text-muted">Nivel de riesgo</p>
-                <div className="mt-1 h-2 w-24 rounded-full" style={{ background: "linear-gradient(to right, #13896F, #F2C94C, #E8833A, #D64545)" }} />
-                <div className="flex justify-between text-[10px] text-muted"><span>Bajo</span><span>Alto</span></div>
-              </div>
-            ) : <span />}
-            <div className="flex flex-col items-end gap-2">
-            <div className="flex gap-2">
-            <button onClick={() => setFilterOpen(true)} aria-label="Filtros del mapa" className={`relative flex h-11 w-11 items-center justify-center rounded-xl border ${filtersOn ? "border-brand-600 bg-brand-100 text-brand-700" : "border-line bg-white"}`}><SlidersHorizontal size={18} />{filtersOn && <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-brand-600" />}</button>
-            <button onClick={() => setReporting(true)} aria-label="Reportar un problema aquí" className="flex h-11 items-center gap-2 rounded-xl bg-risk-red px-3 text-sm font-semibold text-white"><Siren size={18} />Reportar</button>
-            </div>
-            <div className="flex gap-2">
-            <button onClick={() => setHeat(!heat)} aria-pressed={heat} aria-label="Mapa de calor de riesgo" className={`flex h-11 items-center gap-1.5 rounded-xl border px-2.5 text-sm font-semibold ${heat ? "border-brand-900 bg-brand-900 text-white" : "border-line bg-white text-ink"}`}>
-              <Layers size={18} />Riesgo
-            </button>
-            <button onClick={() => setZonesOn(!zonesOn)} aria-pressed={zonesOn} aria-label="Zonas de seguridad" className={`flex h-11 items-center gap-1.5 rounded-xl border px-2.5 text-sm font-semibold ${zonesOn ? "border-brand-900 bg-brand-900 text-white" : "border-line bg-white text-ink"}`}>
-              <Hexagon size={18} />Zonas
-            </button>
-            </div>
-            </div>
+          <div className="mt-2">
+            <RiskControls heat={heat} zones={layers.zones} filtersOn={layers.filtersOn} onHeat={() => layers.setHeat(!heat)} onZones={() => layers.setZones(!layers.zones)} onFilters={layers.openFilters} onReport={() => setReporting(true)} />
           </div>
         )}
       </div>
 
       {/* Hoja inferior */}
       <div className="absolute inset-x-0 bottom-0 max-h-[62%] overflow-y-auto rounded-t-3xl border-t border-line bg-canvas px-4 pb-4 pt-2">
-        {selectedZone ? (
-          <div className="rounded-card border border-line bg-white p-4">
-            <div className="flex items-start gap-3">
-              <Hexagon size={26} className="mt-0.5 shrink-0" />
-              <div className="min-w-0 flex-1">
-                <p className="font-bold">{selectedZone.name}</p>
-                <p className="text-sm text-muted">{selectedZone.score < 60 ? "Zona de riesgo alto" : selectedZone.score < 80 ? "Zona de riesgo medio" : "Zona de riesgo bajo"} · Safety Score del mes</p>
-                <Link href={`/zonas/${selectedZone.id}`} className="mt-1 inline-flex min-h-[44px] items-center text-sm font-semibold text-brand-600">Ver zona</Link>
-              </div>
-              <SafetyScoreBadge score={selectedZone.score} />
-              <button aria-label="Cerrar" onClick={() => setSelectedZone(null)} className="-m-2 flex h-11 w-11 items-center justify-center"><X size={20} /></button>
-            </div>
-          </div>
-        ) : selectedReport ? (
-          <div className="rounded-card border border-line bg-white p-4">
-            <div className="flex items-start gap-3">
-              {(() => { const c = categoryById(selectedReport.category); return <c.icon size={26} className="mt-0.5 shrink-0" />; })()}
-              <div className="min-w-0 flex-1">
-                <p className="font-bold">{categoryById(selectedReport.category).label}</p>
-                <p className="truncate text-sm text-muted">{selectedReport.street}</p>
-                <p className="mt-1 text-xs text-muted">{formatDateTime(selectedReport.createdAt)} · {selectedReport.confirmations} confirmaciones</p>
-                <Link href={selectedReport.mine ? `/reportes/${selectedReport.id}` : `/reportes-comunidad/${selectedReport.id}`} className="mt-1 inline-flex min-h-[44px] items-center text-sm font-semibold text-brand-600">Ver detalle</Link>
-              </div>
-              <button aria-label="Cerrar" onClick={() => setSelectedReport(null)} className="-m-2 flex h-11 w-11 items-center justify-center"><X size={20} /></button>
-            </div>
-          </div>
+        {selectedZone || selectedReport ? (
+          <MapSelectionCard zone={selectedZone} report={selectedReport} onClose={layers.clearSelection} />
         ) : !dest ? (
           <div>
             <button onClick={() => setExpanded(!expanded)} className="mx-auto flex h-8 w-full items-center justify-center text-muted" aria-label={expanded ? "Ocultar tus lugares" : "Ver tus lugares"} aria-expanded={expanded}>
@@ -302,7 +247,7 @@ export function MapPlanner({ risk, zones, reports, places, maxExtraMinutes, init
           </>
         )}
       </div>
-      <MapFilterSheet open={filterOpen} categories={cats} age={age} onChange={(c, a) => { setCats(c); setAge(a); }} onClose={() => setFilterOpen(false)} />
+      {layers.filterSheet}
   <ReportSheet open={reporting} onClose={() => setReporting(false)} position={position} locationLabel="Tu ubicación actual" />
     </div>
   );

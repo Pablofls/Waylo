@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Bike, Scooter, Share2, ShieldAlert, Route as RouteIcon, Compass, CornerUpLeft, CornerUpRight, ArrowUp, Flag, Mic, Pause, Play, Square, X, Siren, Check, LocateOff, RotateCw } from "lucide-react";
 import { MapView } from "@/components/map/MapView";
+import { HeatmapLayer } from "@/components/map/HeatmapLayer";
+import { ReportMarkers } from "@/components/map/ReportMarkers";
+import { ZoneLayer } from "@/components/map/ZoneLayer";
+import { MapSelectionCard, RiskControls, useRiskLayers } from "@/components/domain/RiskControls";
 import { RouteLine } from "@/components/map/RouteLine";
 import { UserMarker } from "@/components/map/UserMarker";
 import { StatBlock } from "@/components/domain/StatBlock";
@@ -23,8 +27,8 @@ import { api, errorText } from "@/lib/api";
 import { MONTERREY_CENTER, routeProgress } from "@/lib/map/geo";
 import { useWakeLock } from "@/lib/geo/useWakeLock";
 import { formatDuration } from "@/lib/format";
-import type { FeatureCollection, Point } from "geojson";
-import type { NavAlert, NavStep, RouteOption } from "@/types";
+import type { FeatureCollection, Point, Polygon } from "geojson";
+import type { NavAlert, NavStep, Report, RouteOption, ZoneShapeProps } from "@/types";
 
 const turnIcon = { recto: ArrowUp, izquierda: CornerUpLeft, derecha: CornerUpRight, llegada: Flag };
 
@@ -34,6 +38,8 @@ interface Props {
   steps: NavStep[];
   alerts: NavAlert[];
   risk: FeatureCollection<Point>;
+  zones: FeatureCollection<Polygon, ZoneShapeProps>;
+  reports: Report[];
 }
 
 const OFF_ROUTE_KM = 0.08;
@@ -43,7 +49,8 @@ const REROUTE_GAP_MS = 60_000;
 /** Cada cuánto se revisan reportes nuevos en la ruta. */
 const ALERTS_EVERY_MS = 120_000;
 
-export function LiveRide({ route: initialRoute, steps: initialSteps, alerts: initialAlerts, risk }: Props) {
+export function LiveRide({ route: initialRoute, steps: initialSteps, alerts: initialAlerts, risk, zones, reports }: Props) {
+  const layers = useRiskLayers(reports);
   // La ruta puede cambiar durante la rodada (recálculo al desviarse o por un reporte nuevo).
   const [route, setRoute] = useState(initialRoute);
   const [steps, setSteps] = useState(initialSteps);
@@ -196,8 +203,11 @@ export function LiveRide({ route: initialRoute, steps: initialSteps, alerts: ini
   return (
     <div className="relative flex-1 bg-brand-900">
       <MapView center={route?.coordinates[0] ?? MONTERREY_CENTER} zoom={route ? 15 : 12}>
+        <ZoneLayer data={zones} visible={layers.zones} onSelect={layers.selectZone} />
+        <HeatmapLayer data={risk} visible={layers.heat} />
         {route && <RouteLine id="plan" coordinates={route.coordinates} risk={risk} width={6} opacity={active ? 0.4 : 1} fit fitPadding={{ top: 80, bottom: 280, left: 40, right: 40 }} />}
         {ride.track.length > 1 && <RouteLine id="track" coordinates={ride.track} risk={risk} width={8} />}
+        <ReportMarkers reports={layers.shownReports} onSelect={layers.selectReport} />
         <UserMarker position={ride.position} follow={active} />
       </MapView>
 
@@ -252,8 +262,11 @@ export function LiveRide({ route: initialRoute, steps: initialSteps, alerts: ini
             {ride.error && <p role="alert" className="pointer-events-auto rounded-xl bg-white px-4 py-3 text-sm font-semibold text-[#B02E2E]">{ride.error === "denied" ? "Permiso de ubicación denegado." : ride.error === "unavailable" ? "Este dispositivo no admite geolocalización." : "No pudimos obtener tu ubicación."} <Link href="/permisos/ubicacion" className="underline">Cómo activarla</Link></p>}
           </>
         ) : (
-          <div className="pointer-events-auto flex items-center justify-between">
+          <div className="pointer-events-auto space-y-2">
             <Link href={guided ? "/mapa" : "/inicio"} aria-label="Cerrar" className="flex h-12 w-12 items-center justify-center rounded-full bg-white"><X size={22} /></Link>
+            {/* Antes de salir, aunque no haya destino, se ven las zonas y los reportes. */}
+            <RiskControls heat={layers.heat} zones={layers.zones} filtersOn={layers.filtersOn} onHeat={() => layers.setHeat(!layers.heat)} onZones={() => layers.setZones(!layers.zones)} onFilters={layers.openFilters} onReport={() => setSheet(true)} />
+            <MapSelectionCard zone={layers.selectedZone} report={layers.selectedReport} onClose={layers.clearSelection} />
           </div>
         )}
       </div>
@@ -352,6 +365,7 @@ export function LiveRide({ route: initialRoute, steps: initialSteps, alerts: ini
       <ShareTripSheet open={shareOpen} sharingWith={sharingWith} etaLabel={route ? `${Math.max(1, Math.round(route.minutes * (1 - progress)))} min` : "sin destino"} onStart={(ids) => startLiveShare(ids, null)} onStop={stopLiveShare} onClose={() => setShareOpen(false)} />
       <EmergencySheet open={sosOpen} position={ride.position} rideId={rideId} onSimulateFall={process.env.NODE_ENV === "production" ? undefined : () => { setSosOpen(false); setFall(true); }} onClose={() => setSosOpen(false)} />
       {fall && <FallAlert seconds={fallSeconds} position={ride.position} rideId={rideId} onOk={() => setFall(false)} />}
+      {layers.filterSheet}
       <ReportSheet open={sheet} onClose={() => setSheet(false)} position={ride.position} rideId={rideId} onSaved={() => setReportCount((n) => n + 1)} locationLabel="Tu ubicación en la rodada" />
     </div>
   );
